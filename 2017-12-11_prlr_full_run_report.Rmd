@@ -1,0 +1,313 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+#qPCR: Prolactin receptor project 
+##_Full run report for December qPCR runs_ 
+We ran the qPCR on a BioRad CFX 395X unit in the Huising lab. Reactions were run at 10 uL using BioRad SSOAdvanced SYBR Green chemistry and 1 uL of cDNA diluted to 1:5 with DEPC H2O. Each sample cDNA was run in duplicate for every gene. We ran two reference genes: ACTB and rpL4, and 3 genes of interest : prolactin receptor (PRLR), growth hormone receptor (GHR) and prolactin (PRL).
+We ran positive controls (pure PCR purified gene products, 1:625,000 dln) and negative controls (H2O)  in triplicate on each plate. 
+All genes were run on the same plate, so no inter-plate variation affected the full sample size for each gene. 
+```{r, include=FALSE}
+library(ggplot2)
+library(cowplot)
+library(knitr)
+library(lme4)
+library(lsmeans)
+library(nlme)
+library(car)
+library(multcompView)
+prlr<-read.csv(file="~/Documents/2017-12-11_PRLR_project_results.csv")
+```
+### Sample size 
+We ran 85 samples, each in duplicate for each reference gene and gene of interest.  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+counts<-table(prlr$Sex, prlr$Stage)
+bb<-barplot(counts, main = "Sample size by stage and sex", xlab = "Parental care stage", col=c("sienna2", "turquoise2"), legend= rownames(counts), legend.text=TRUE, args.legend=list(x=ncol(counts) + 1, y=max(colSums(counts)), bty = "n")) #hacky solution to making the legend not overlap with the bars
+print<-bb
+text(bb,counts[1,]-4,labels=counts[1,],cex=.8) #prints sample size on the bars
+text(bb,colSums(counts)-4,labels=counts[2,],cex=0.8)
+```
+
+###Reference gene reliability
+Previous runs showed that ACTB alone showed a trend with sex, questioning its reliability as a reference gene. Here, we ran both ACTB and rpL4 as reference genes and used the geometric mean. We tested that reference gene amplification was not significantly different between time points or sexes. Neither stage nor sex significantly predicted reference gene expression. 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(prlr) + 
+  geom_bar(aes(Stage, refgene, fill = Sex), 
+           position = "dodge", stat = "summary", fun.y = "mean")+
+  labs(title = "Reference gene amplification across time points", x= "Time point", y="geometric mean of ACTB and rpL4 Ct")+
+   scale_y_reverse( lim=c(25,0))
+
+```
+```{r, message=FALSE, warning=FALSE}
+f1 <- lm(refgene ~ Stage*Sex,data=prlr)
+Anova(f1)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+prlr$group<-1  #collapsed variable for t test comparing control to treatment
+prlr$group[prlr$Stage=="bldg"]<-"0"
+#puts stages in the right order
+prlr$order<-1
+prlr$order[prlr$Stage=="Hatch"]<-"4"
+prlr$order[prlr$Stage=="Inc_D3"]<-"2"
+prlr$order[prlr$Stage=="Inc_D9"]<-"3"
+prlr$order[prlr$Stage=="Manip_D8"]<-"5"
+
+prlr$Stage <- factor(prlr$Stage, levels = prlr$Stage[order(prlr$order)])
+```
+
+##Statistical analysis
+###Prolactin receptor
+Boxplots show a trend of increased expression in the hatch stage, with relatively uniform expression across the other stages and the manipulation. 
+Interestingly, the manipulation appears to be similar to incubation day 9, not exhibiting higher expression similar to hatch. 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#boxplots for each stage
+ggplot(prlr, aes(x=Stage, y= PRLR_norm, fill=Stage)) + geom_boxplot() +
+    guides(fill=FALSE) + 
+    stat_summary(fun.y=mean, geom="point", shape=5, size=4)+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Prolactin receptor expression, by stage", y = "Normalized Ct \n(Ct PRL-R - refGenes)",caption = "Lower values indicate higher gene expression. \nMedian values represented by dark lines, mean indicated by diamonds.")+
+   scale_y_reverse( lim=c(20,0))
+
+#sex and stage
+ggplot(aes(y = PRLR_norm, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Prolactin receptor expression, by stage", y = "Normalized Ct \n(Ct PRL-R - refGenes)",caption = "Lower values indicate higher gene expression. \nMedian values represented by dark lines, mean indicated by diamonds.")+
+   scale_y_reverse( lim=c(20,0))
+
+
+```
+
+An ANOVA analysis of normalized Ct values by time point failed to reject the null (p >0.1). We cannot conclude that any stage is significantly different from one another, nor are sexes different than each other in normalized prolactin receptor expression. 
+```{r, message=FALSE, warning=FALSE}
+f2<-lm(PRLR_norm~ Stage*Sex, data=prlr)
+Anova(f2)
+```
+
+```{r PRLR_mean, echo=FALSE, message=FALSE, warning=FALSE}
+ls_prlr = lsmeans(f2, pairwise ~ Stage:Sex,adjust="tukey") #generates ls means
+cld_prlr = cld(ls_prlr,alpha=0.05,Letters=letters,adjust="tukey") #generates post-hoc groups
+cld_prlr$.group=gsub(" ", "", cld_prlr$.group)
+
+
+pd = position_dodge(0.4)    ### How much to jitter the points on the plot
+
+ggplot(cld_prlr,
+       aes(x     = Stage,
+           y     = lsmean,
+           color = Sex)) +
+
+    geom_point(shape  = 15,
+               size   = 4,
+             position = pd) +
+
+    geom_errorbar(aes(ymin  =  lower.CL,
+                      ymax  =  upper.CL),
+                      width =  0.2,
+                      size  =  0.7,
+                      position = pd) +
+
+    theme(axis.title   = element_text(size=12, face = "bold"),
+          plot.title = element_text(size=14, face="bold"),
+          plot.caption = element_text(size=10,hjust = 0)) +
+
+    ylab("Normalized Ct value") +
+     ggtitle ("Prolactin receptor expression by stage and sex") +
+      scale_y_reverse( lim=c(20,0))+
+            labs(caption= "Least-squares means represented by boxes, error bars represent 95% confidence interval. \nSmaller numbers indicate higher gene expression.",
+                            hjust=0.5) +
+  scale_color_manual(values = c("sienna2", "turquoise2"))
+```
+
+We grouped all non-control (all treatment groups except building) into one collapsed variable to test if the other time points differed from the control time point. This t-test also failed to reject the null (p= 0.94), and we cannot conclude that the parental time points are significantly different from the building time point in PRL-R expression. 
+```{r, message=FALSE, warning=FALSE}
+t.test(PRLR_norm ~ group, data=prlr)
+```
+###Growth hormone receptor 
+Interestingly, growth hormone receptor shows a trend of slightly increasing through incubation, but decreasing at hatch. Again, the manipulation on day 8 appears similar to the day 9 expression levels, not similar to hatch. 
+Males appear to express growth hormone receptor at higher levels than females. 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#boxplots for each stage
+ggplot(prlr, aes(x=Stage, y= GHR_norm, fill=Stage)) + geom_boxplot() +
+    guides(fill=FALSE) + 
+    stat_summary(fun.y=mean, geom="point", shape=5, size=4)+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Growth hormone receptor expression, by stage", y = "Normalized Ct \n(Ct GHR - refGenes)",caption = "Lower values indicate higher gene expression. \nMedian values represented by dark lines, mean indicated by diamonds.")+
+   scale_y_reverse( lim=c(20,0))
+
+#sex and stage
+ggplot(aes(y = GHR_norm, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Growth hormone receptor expression, by stage and sex", y = "Normalized Ct \n(Ct GHR - refGenes)",caption = "Lower values indicate higher gene expression. \nMedian values represented by dark lines, mean indicated by diamonds.")+
+   scale_y_reverse( lim=c(20,0))
+
+
+```
+
+An ANOVA indicates no significant effect of stage on growth hormone receptor expression, but a significant (p=0.013) effect of sex on growth hormone expression, irrespective of parental care stage as the interaction was not siginificant. 
+```{r, message=FALSE, warning=FALSE}
+f3<-lm(GHR_norm~ Stage*Sex, data=prlr)
+Anova(f3)
+```
+
+```{r GHR_mean, echo=FALSE, message=FALSE, warning=FALSE}
+ls_ghr = lsmeans(f3, pairwise ~ Stage:Sex,adjust="tukey") #generates ls means
+cld_ghr = cld(ls_ghr,alpha=0.05,Letters=letters,adjust="tukey") #generates post-hoc groups
+cld_ghr$.group=gsub(" ", "", cld_ghr$.group)
+
+ggplot(cld_ghr,
+       aes(x     = Stage,
+           y     = lsmean,
+           color = Sex)) +
+
+    geom_point(shape  = 15,
+               size   = 4,
+             position = pd) +
+
+    geom_errorbar(aes(ymin  =  lower.CL,
+                      ymax  =  upper.CL),
+                      width =  0.2,
+                      size  =  0.7,
+                      position = pd) +
+
+    theme(axis.title   = element_text(size=12, face = "bold"),
+          plot.title = element_text(size=14, face="bold"),
+          plot.caption = element_text(size=10,hjust = 0)) +
+
+    ylab("Normalized Ct value") +
+     ggtitle ("Growth hormone receptor expression by stage and sex") +
+      scale_y_reverse( lim=c(20,0))+
+            labs(caption= "Least-squares means represented by boxes, error bars represent 95% confidence interval. \nSmaller numbers indicate higher gene expression.",
+                            hjust=0.5) +
+  scale_color_manual(values = c("sienna2", "turquoise2"))
+
+ls_ghrsex = lsmeans(f3, pairwise ~ Sex,adjust="tukey") #generates ls means
+cld_ghrsex = cld(ls_ghrsex,alpha=0.05,Letters=letters,adjust="tukey") #generates post-hoc groups
+
+ggplot(cld_ghrsex,
+       aes(x     = Sex,
+           y     = lsmean,
+           color = Sex)) +
+
+    geom_point(shape  = 15,
+               size   = 4,
+             position = pd) +
+
+    geom_errorbar(aes(ymin  =  lower.CL,
+                      ymax  =  upper.CL),
+                      width =  0.2,
+                      size  =  0.7,
+                      position = pd) +
+
+    theme(axis.title   = element_text(face = "bold"),
+          plot.title = element_text(face="bold"),
+          plot.caption = element_text(size=10,hjust = 0)) +
+
+    ylab("Normalized Ct value") +
+     ggtitle ("Growth hormone receptor expression by sex") +
+      scale_y_reverse( lim=c(20,0))+
+            labs(caption= "Least-squares means represented by boxes, error bars represent 95% confidence interval. \nSmaller numbers indicate higher gene expression.",
+                            hjust=0.5) +
+  scale_color_manual(values = c("sienna2", "turquoise2"))
+```
+###Prolactin 
+Prolactin (gene expression for the peptide hormone transcript) exhibited lower expression than the other genes. Prolactin expression showed a similar pattern to prolactin receptor, with a slight increase in expression around hatch. However, the manipulation seems to have increased prolactin expression slightly compared to incubation day 9, especially in male birds. 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#boxplots for each stage
+ggplot(prlr, aes(x=Stage, y= PRL_norm, fill=Stage)) + geom_boxplot() +
+    guides(fill=FALSE) + 
+    stat_summary(fun.y=mean, geom="point", shape=5, size=4)+
+    theme(axis.title=element_text(face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Prolactin expression, by stage", y = "Normalized Ct \n(Ct PRL - refGenes)",caption = "Lower values indicate higher gene expression. \nMedian values represented by dark lines, mean indicated by diamonds.")+
+   scale_y_reverse( lim=c(20,0))
+
+#sex and stage
+ggplot(aes(y = PRL_norm, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
+    theme(
+        axis.title=element_text(face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Prolactin expression, by stage and sex", y = "Normalized Ct \n(Ct PRL - refGenes)",caption = "Lower values indicate higher gene expression. \nMedian values represented by dark lines, mean indicated by diamonds.")+
+   scale_y_reverse( lim=c(20,0))
+```
+
+An ANOVA showed no significant effect of parental care stage on prolactin expression, but there was a significant effect of sex (p = 0.03), regardless of parental care stage (no significant interaction).
+This suggests males express more prolactin in the crop than females. 
+```{r}
+f4<-lm(PRL_norm~ Stage*Sex, data=prlr)
+Anova(f4)
+```
+```{r PRL_mean, echo=FALSE, message=FALSE, warning=FALSE}
+ls_pr = lsmeans(f4, pairwise ~ Stage:Sex,adjust="tukey") #generates ls means
+cld_pr = cld(ls_pr,alpha=0.05,Letters=letters,adjust="tukey") #generates post-hoc groups
+
+ggplot(cld_pr,
+       aes(x     = Stage,
+           y     = lsmean,
+           color = Sex)) +
+
+    geom_point(shape  = 15,
+               size   = 4,
+             position = pd) +
+
+    geom_errorbar(aes(ymin  =  lower.CL,
+                      ymax  =  upper.CL),
+                      width =  0.2,
+                      size  =  0.7,
+                      position = pd) +
+
+    theme(axis.title   = element_text(face = "bold"),
+          plot.title = element_text(face="bold"),
+          plot.caption = element_text(size=10,hjust = 0)) +
+
+    ylab("Normalized Ct value") +
+     ggtitle ("Prolactin expression by stage and sex") +
+      scale_y_reverse( lim=c(25,0))+
+            labs(caption= "Least-squares means represented by boxes, error bars represent 95% confidence interval. \nSmaller numbers indicate higher gene expression.",
+                            hjust=0.5) +
+  scale_color_manual(values = c("sienna2", "turquoise2"))
+
+ls_prsex = lsmeans(f4, pairwise ~ Sex,adjust="tukey") #generates ls means
+cld_prsex = cld(ls_prsex,alpha=0.05,Letters=letters,adjust="tukey") #generates post-hoc groups
+
+ggplot(cld_prsex,
+       aes(x     = Sex,
+           y     = lsmean,
+           color = Sex,
+           label = .group)) +
+
+    geom_point(shape  = 15,
+               size   = 4,
+             position = pd) +
+
+    geom_errorbar(aes(ymin  =  lower.CL,
+                      ymax  =  upper.CL),
+                      width =  0.2,
+                      size  =  0.7,
+                      position = pd) +
+
+    theme(axis.title   = element_text( face = "bold"),
+          plot.title = element_text(face="bold"),
+          plot.caption = element_text(size=10,hjust = 0)) +
+
+  geom_text(nudge_x = c(0, 0, 0, 0),
+            nudge_y = c(4, 4, 4, 4),
+            color   = "black")+
+
+    ylab("Normalized Ct value") +
+     ggtitle ("Growth hormone receptor expression by sex") +
+      scale_y_reverse( lim=c(20,0))+
+            labs(caption= "Least-squares means represented by boxes, error bars represent 95% confidence interval. \nSmaller numbers indicate higher gene expression.",
+                            hjust=0.5) +
+  scale_color_manual(values = c("sienna2", "turquoise2"))
+```
