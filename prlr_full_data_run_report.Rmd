@@ -1,0 +1,212 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+#qPCR: Prolactin receptor project 
+##_Full run report for December qPCR runs_ 
+We ran the qPCR on a BioRad CFX 395X unit in the Huising lab. Reactions were run at 10 uL using BioRad SSOAdvanced SYBR Green chemistry and 1 uL of cDNA diluted to 1:5 with DEPC H2O. Each sample cDNA was run in duplicate for every gene. We ran two reference genes: ACTB and rpL4, and 3 genes of interest : prolactin receptor (PRLR), growth hormone receptor (GHR) and prolactin (PRL).
+We ran positive controls (pure PCR purified gene products, 1:625,000 dln) and negative controls (H2O)  in triplicate on each plate. 
+One plate of hatch samples, collected in early 2018, was run on a separate plate. 
+
+```{r, include=FALSE}
+library(ggplot2)
+library(cowplot)
+library(knitr)
+library(lme4)
+library(lsmeans)
+library(nlme)
+library(car)
+library(multcompView)
+prlr<-read.csv(file="~/Documents/2018-04-03_PRLR_project_results.csv",na.strings="NA")
+```
+### Sample size 
+We ran 85 samples, each in duplicate for each reference gene and gene of interest.  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+counts<-table(prlr$Sex, prlr$Stage)
+bb<-barplot(counts, main = "Sample size by stage and sex", xlab = "Parental care stage", col=c("sienna2", "turquoise2"), legend= rownames(counts), legend.text=TRUE, args.legend=list(x=ncol(counts) + 1, y=max(colSums(counts)), bty = "n")) #hacky solution to making the legend not overlap with the bars
+print<-bb
+text(bb,counts[1,]-4,labels=counts[1,],cex=.8) #prints sample size on the bars
+text(bb,colSums(counts)-4,labels=counts[2,],cex=0.8)
+```
+
+###Reference gene reliability
+Previous runs showed that ACTB alone showed a trend with sex, questioning its reliability as a reference gene. Here, we ran both ACTB and rpL4 as reference genes and used the geometric mean. We tested that reference gene amplification was not significantly different between time points or sexes. Neither stage nor sex significantly predicted reference gene expression. 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(prlr) + 
+  geom_bar(aes(Stage, refgene, fill = Sex), 
+           position = "dodge", stat = "summary", fun.y = "mean")+
+  labs(title = "Reference gene amplification across time points", x= "Time point", y="geometric mean of ACTB and rpL4 Ct")+
+   scale_y_reverse( lim=c(25,0))
+
+```
+```{r, message=FALSE, warning=FALSE}
+f1 <- lm(refgene ~ Stage*Sex,data=prlr)
+Anova(f1)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+prlr$group<-1  #collapsed variable for t test comparing control to treatment
+prlr$group[prlr$Stage=="bldg"]<-"0"
+#puts stages in the right order
+prlr$order<-1
+prlr$order[prlr$Stage=="Hatch"]<-"4"
+prlr$order[prlr$Stage=="Inc_D3"]<-"2"
+prlr$order[prlr$Stage=="Inc_D9"]<-"3"
+prlr$order[prlr$Stage=="Manip_D8"]<-"5"
+
+prlr$Stage <- factor(prlr$Stage, levels = prlr$Stage[order(prlr$order)])
+```
+
+##Statistical analysis
+###Prolactin receptor
+Boxplots show a trend of increased expression in the hatch stage, with relatively uniform expression across the other stages and the manipulation. 
+Interestingly, the manipulation appears to be similar to incubation day 9, not exhibiting higher expression similar to hatch. 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#boxplots for each stage
+ggplot(prlr, aes(x=Stage, y= PRLR_ddCT, fill=Stage)) + geom_boxplot() +
+    guides(fill=FALSE) + 
+    stat_summary(fun.y=mean, geom="point", shape=5, size=4)+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Prolactin receptor relative expression, by stage", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+   ylim(-10,10)
+
+#sex and stage
+ggplot(aes(y = PRLR_ddCT, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Prolactin receptor relative expression, by stage", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+   ylim(-10,10)
+
+
+```
+
+An ANOVA analysis of normalized Ct values by time point failed to reject the null (p >0.1). We cannot conclude that any stage is significantly different from one another, nor are sexes different than each other in normalized prolactin receptor expression. 
+```{r, message=FALSE, warning=FALSE}
+f2<-lm(PRLR_ddCT~ Stage*Sex, data=prlr,na.action = na.exclude)
+Anova(f2)
+
+prlr$Stage<-factor(prlr$Stage)
+prlr$Sex<-factor(prlr$Sex)
+
+#friedman.test(PRLR_ddCT~Sex|Stage, data=prlr)
+
+#outlier analysis 
+qqPlot(f2, main="QQ Plot")  #looks ok
+influencePlot(f2,	id.method="identify", main="Influence Plot", sub="Circle size is proportial to Cook's Distance" ) 
+#large circles outside the boundary of -2 to 2 are outliers 
+
+# Cook's D plot
+# identify D values > 4/(n-k-1) 
+cutoff <- 4/((nrow(prlr)-length(f2$coefficients)-2)) 
+plot(f2, which=4, cook.levels=cutoff)
+
+library(MASS)
+sresid <- studres(f2) 
+hist(sresid, freq=FALSE, 
+   main="Distribution of Studentized Residuals")
+#xfit<-seq(min(sresid),max(sresid),length=40) 
+yfit<-dnorm(xfit) 
+lines(xfit, yfit)
+
+# Evaluate homoscedasticity
+# non-constant error variance test
+ncvTest(f2)
+# plot studentized residuals vs. fitted values 
+spreadLevelPlot(f2)
+
+#creates a new column holding the Studentized residuals for the f2 model on PRLR expression
+prlr$PRLR_resid<-studres(f2)
+```
+###Growth hormone receptor 
+Interestingly, growth hormone receptor shows a trend of slightly increasing through incubation, but decreasing at hatch. Again, the manipulation on day 8 appears similar to the day 9 expression levels, not similar to hatch. 
+Males appear to express growth hormone receptor at higher levels than females. 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#boxplots for each stage
+ggplot(prlr, aes(x=Stage, y= GHR_ddCt, fill=Stage)) + geom_boxplot() +
+    guides(fill=FALSE) + 
+    stat_summary(fun.y=mean, geom="point", shape=5, size=4)+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Growth hormone receptor relative expression, by stage", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+    ylim(-10,10)
+
+#sex and stage
+ggplot(aes(y = GHR_ddCt, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Growth hormone receptor relative expression, by stage and sex", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+    ylim(-10,10)
+
+
+```
+
+An ANOVA indicates no significant effect of stage on growth hormone receptor expression, but a significant (p=0.031) effect of sex on growth hormone expression, irrespective of parental care stage as the interaction was not siginificant. 
+```{r, message=FALSE, warning=FALSE}
+f3<-lm(GHR_ddCT~ Stage*Sex, data=prlr, na.action=na.exclude)
+Anova(f3)
+
+#creates a new column holding the Studentized residuals for the model
+prlr$GHR_resid<-studres(f3)
+```
+
+###Prolactin 
+Prolactin (gene expression for the peptide hormone transcript) exhibited lower expression than the other genes. Prolactin expression showed a similar pattern to prolactin receptor, with a slight increase in expression around hatch. However, the manipulation seems to have increased prolactin expression slightly compared to incubation day 9, especially in male birds. 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#boxplots for each stage
+ggplot(prlr, aes(x=Stage, y= PRL_ddCt, fill=Stage)) + geom_boxplot() +
+    guides(fill=FALSE) + 
+    stat_summary(fun.y=mean, geom="point", shape=5, size=4)+
+    theme(axis.title=element_text(face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Prolactin expression, by stage", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+     ylim(-10,10)
+
+#sex and stage
+ggplot(aes(y = PRL_ddCt, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
+    theme(
+        axis.title=element_text(face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Prolactin expression, by stage and sex", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+     ylim(-10,10)
+```
+
+An ANOVA showed no significant effect of parental care stage or sex on prolactin expression.
+```{r}
+f4<-lm(PRL_norm~ Stage*Sex, data=prlr, na.action=na.exclude)
+Anova(f4)
+
+#creates a new column holding the Studentized residuals for the model
+prlr$PRL_resid<-studres(f4)
+```
+```{r}
+#create "datasets" with only values where Studentized residuals are between - 2 and 2
+noOutPRLR<-subset(prlr, PRLR_resid<= 2.00 & PRLR_resid>= -2.00)
+noOutGHR<-subset(prlr, GHR_resid<= 2.00 & GHR_resid>= -2.00)
+noOutPRL<-subset(prlr, PRL_resid<= 2.00 & PRL_resid>= -2.00)
+
+#re-run ANOVAs on these datasets 
+f2no<-lm(PRLR_ddCT~ Stage*Sex, data=noOutPRLR)
+Anova(f2no)
+f3no<-lm(GHR_ddCT~ Stage*Sex, data=noOutGHR)
+Anova(f3no)
+f4no<-lm(PRL_ddCT~ Stage*Sex, data=noOutPRL)
+Anova(f4no)
+
+#run outlier analysis on these new ANOVAs
+qqPlot(f2no, main="QQ Plot: PRLR no outliers")  
+influencePlot(f2no,	id.method="identify", main="Influence Plot: PRLR no outliers", sub="Circle size is proportial to Cook's Distance" ) 
+qqPlot(f3no, main="QQ Plot: GHR no outliers")  #looks ok
+influencePlot(f3no,	id.method="identify", main="Influence Plot: GHR no outliers", sub="Circle size is proportial to Cook's Distance" ) 
+qqPlot(f4no, main="QQ Plot: PRL no outliers")  #looks ok
+influencePlot(f4no,	id.method="identify", main="Influence Plot: PRL no outliers", sub="Circle size is proportial to Cook's Distance" ) 
+#??? I don't understand how this is not just going to eat away at my sample size? Like, how is this not always going to have outliers and I have to keep pruning them away? Doesn't feel like a good way to deal with data...
+
+```
+ 
