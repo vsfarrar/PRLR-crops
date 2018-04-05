@@ -185,7 +185,7 @@ Anova(f4)
 #creates a new column holding the Studentized residuals for the model
 prlr$PRL_resid<-studres(f4)
 ```
-```{r}
+```{r, echo=FALSE}
 #create "datasets" with only values where Studentized residuals are between - 2 and 2
 noOutPRLR<-subset(prlr, PRLR_resid<= 2.00 & PRLR_resid>= -2.00)
 noOutGHR<-subset(prlr, GHR_resid<= 2.00 & GHR_resid>= -2.00)
@@ -208,5 +208,19 @@ qqPlot(f4no, main="QQ Plot: PRL no outliers")  #looks ok
 influencePlot(f4no,	id.method="identify", main="Influence Plot: PRL no outliers", sub="Circle size is proportial to Cook's Distance" ) 
 #??? I don't understand how this is not just going to eat away at my sample size? Like, how is this not always going to have outliers and I have to keep pruning them away? Doesn't feel like a good way to deal with data...
 
+
+#non-parametric one ways
+kw.prlr<-kruskal.test(PRLR_ddCT~Stage, data=prlr)
+kw.ghr<-kruskal.test(GHR_ddCT~Stage, data=prlr)
+kw.prl<-kruskal.test(PRL_ddCT~Stage, data=prlr)
+
+ggplot(noOutGHR, aes(x=Stage, y= GHR_ddCT, fill=Stage)) + geom_boxplot() +
+    guides(fill=FALSE) + 
+    stat_summary(fun.y=mean, geom="point", shape=5, size=4)+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Growth hormone receptor relative expression, by stage", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+    ylim(-10,10)
 ```
  
