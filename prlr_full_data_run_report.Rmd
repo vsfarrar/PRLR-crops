@@ -4,7 +4,6 @@ output:
   pdf_document: default
 ---
 #qPCR: Prolactin receptor project 
-##_Full run report for December qPCR runs_ 
 We ran the qPCR on a BioRad CFX 395X unit in the Huising lab. Reactions were run at 10 uL using BioRad SSOAdvanced SYBR Green chemistry and 1 uL of cDNA diluted to 1:5 with DEPC H2O. Each sample cDNA was run in duplicate for every gene. We ran two reference genes: ACTB and rpL4, and 3 genes of interest : prolactin receptor (PRLR), growth hormone receptor (GHR) and prolactin (PRL).
 We ran positive controls (pure PCR purified gene products, 1:625,000 dln) and negative controls (H2O)  in triplicate on each plate. 
 One plate of hatch samples, collected in early 2018, was run on a separate plate. 
@@ -18,7 +17,10 @@ library(lsmeans)
 library(nlme)
 library(car)
 library(multcompView)
-prlr<-read.csv(file="~/Documents/2018-04-03_PRLR_project_results.csv",na.strings="NA")
+library(plyr)
+library(MASS)
+#library(ggsignif)
+prlr<-read.csv(file="~/Documents/2018-04-16_PRLR_project_results.csv",na.strings="NA")
 ```
 ### Sample size 
 We ran 85 samples, each in duplicate for each reference gene and gene of interest.  
@@ -31,7 +33,7 @@ text(bb,colSums(counts)-4,labels=counts[2,],cex=0.8)
 ```
 
 ###Reference gene reliability
-Previous runs showed that ACTB alone showed a trend with sex, questioning its reliability as a reference gene. Here, we ran both ACTB and rpL4 as reference genes and used the geometric mean. We tested that reference gene amplification was not significantly different between time points or sexes. Neither stage nor sex significantly predicted reference gene expression. 
+Previous runs showed that ACTB alone showed a trend with sex, questioning its reliability as a reference gene. Here, we ran both ACTB and rpL4 as reference genes and used the geometric mean. We tested that reference gene amplification was not significantly different between time points or sexes. Neither stage nor sex significantly predicted reference gene expression.
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(prlr) + 
@@ -59,6 +61,42 @@ prlr$order[prlr$Stage=="Manip_D8"]<-"5"
 prlr$Stage <- factor(prlr$Stage, levels = prlr$Stage[order(prlr$order)])
 ```
 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#function for generating post hoc label groups in ggplot2  #could not get to work
+#from https://stackoverflow.com/questions/18771516/is-there-a-function-to-add-aov-post-hoc-testing-results-to-ggplot2-boxplot
+generate_label_df <- function(HSD, flev){
+ # Extract labels and factor levels from Tukey post-hoc 
+ Tukey.levels <- HSD[[flev]][,4]
+ Tukey.labels <- multcompLetters(Tukey.levels)['Letters']
+ plot.labels <- names(Tukey.labels[['Letters']])
+
+ # Get highest quantile for Tukey's 5 number summary and add a bit of space to buffer between    
+ # upper quantile and label placement
+    boxplot.df <- ddply(d, flev, function (x) max(fivenum(x$y)) + 0.2)
+
+ # Create a data frame out of the factor levels and Tukey's homogenous group letters
+  plot.levels <- data.frame(plot.labels, labels = Tukey.labels[['Letters']],
+     stringsAsFactors = FALSE)
+
+ # Merge it with the labels
+   labels.df <- merge(plot.levels, boxplot.df, by.x = 'plot.labels', by.y = flev, sort = FALSE)
+
+return(labels.df)
+}
+
+generate_label_df2 <- function(TUKEY, variable){
+
+  # Extract labels and factor levels from Tukey post-hoc 
+  Tukey.levels <- TUKEY[[variable]][,4]
+  Tukey.labels <- data.frame(multcompLetters(Tukey.levels)['Letters'])
+
+  #I need to put the labels in the same order as in the boxplot :
+  Tukey.labels$treatment=rownames(Tukey.labels)
+  Tukey.labels=Tukey.labels[order(Tukey.labels$treatment) , ]
+  return(Tukey.labels)
+}
+```
+
 ##Statistical analysis
 ###Prolactin receptor
 Boxplots show a trend of increased expression in the hatch stage, with relatively uniform expression across the other stages and the manipulation. 
@@ -71,7 +109,7 @@ ggplot(prlr, aes(x=Stage, y= PRLR_ddCT, fill=Stage)) + geom_boxplot() +
     theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold"),
         plot.caption = element_text(size=10, hjust=0))+
-    labs(title = "Prolactin receptor relative expression, by stage", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+    labs(title = "Prolactin receptor relative expression, by stage", y = "Fold change \n(relative to building)",caption = "")+
    ylim(-10,10)
 
 #sex and stage
@@ -82,6 +120,29 @@ ggplot(aes(y = PRLR_ddCT, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
     labs(title = "Prolactin receptor relative expression, by stage", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
    ylim(-10,10)
 
+#calculating post-hoc letter grouping locations
+###Is there a better way to do this?
+a2<-aov(PRLR_ddCT~Stage,data=prlr)
+tuk2<-TukeyHSD(a2,prlr$Stage, conf.level=0.95)
+labs2<-generate_label_df2(tuk2,"Stage")  #uses function in previous chunk
+names(labs2)<-c("Letters","Stage") #renames columns for easier merging
+yvalue<-aggregate(prlr, by=list(prlr$Stage), FUN=mean, na.rm=TRUE) #aggregates prlr dataframe by stage
+yvalue$Stage<-yvalue$Group.1 #rename for merging
+labs.prlr<-merge(labs2,yvalue, by="Stage") #merge two dataframes together so can be used to set letter location
+
+#sex by stage plot, with no visibile outliers (but original data distribution)
+prlr.plot<- ggplot(aes(y = PRLR_ddCT, x = Stage, fill = Sex), data = prlr) + geom_boxplot(outlier.size = NA)+ 
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Prolactin receptor relative expression, by stage", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+  geom_text(data = labs.prlr, aes(x = Stage, y = PRLR_ddCT, label = Letters),vjust=-5.5,hjust=-.5, inherit.aes = FALSE)+
+   ylim(-7,7) 
+print(prlr.plot)
+  
+
+
+
 
 ```
 
@@ -89,21 +150,23 @@ An ANOVA analysis of normalized Ct values by time point failed to reject the nul
 ```{r, message=FALSE, warning=FALSE}
 f2<-lm(PRLR_ddCT~ Stage*Sex, data=prlr,na.action = na.exclude)
 Anova(f2)
-
 prlr$Stage<-factor(prlr$Stage)
 prlr$Sex<-factor(prlr$Sex)
 
 #friedman.test(PRLR_ddCT~Sex|Stage, data=prlr)
 
 #outlier analysis 
-qqPlot(f2, main="QQ Plot")  #looks ok
-influencePlot(f2,	id.method="identify", main="Influence Plot", sub="Circle size is proportial to Cook's Distance" ) 
+qqPlot(f2, main="PRLR:QQ Plot")  #looks ok
+qqPlot(f3, main="GHR: QQ Plot")
+qqPlot(f4, main="PRL: QQ Plot")
+ip2<-influencePlot(f2,	id.method="identify", main="PRLR: Influence Plot", sub="Circle size is proportial to Cook's Distance" ) 
 #large circles outside the boundary of -2 to 2 are outliers 
-
+ip3<-influencePlot(f3,	id.method="identify", main="GHR: Influence Plot", sub="Circle size is proportial to Cook's Distance" )
+ip4<-influencePlot(f4,	id.method="identify", main="PRL: Influence Plot", sub="Circle size is proportial to Cook's Distance" )
 # Cook's D plot
 # identify D values > 4/(n-k-1) 
-cutoff <- 4/((nrow(prlr)-length(f2$coefficients)-2)) 
-plot(f2, which=4, cook.levels=cutoff)
+cutoff2 <- 4/((nrow(prlr)-length(f2$coefficients)-2)) 
+plot(f2, which=4, cook.levels=cutoff2)
 
 library(MASS)
 sresid <- studres(f2) 
@@ -120,14 +183,18 @@ ncvTest(f2)
 spreadLevelPlot(f2)
 
 #creates a new column holding the Studentized residuals for the f2 model on PRLR expression
+#important for excluding influential outliers in corresponding analyses
 prlr$PRLR_resid<-studres(f2)
+
+#post-hoc comparisons to see which are different 
+lsmeans(f2, pairwise~Stage)
 ```
 ###Growth hormone receptor 
 Interestingly, growth hormone receptor shows a trend of slightly increasing through incubation, but decreasing at hatch. Again, the manipulation on day 8 appears similar to the day 9 expression levels, not similar to hatch. 
 Males appear to express growth hormone receptor at higher levels than females. 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #boxplots for each stage
-ggplot(prlr, aes(x=Stage, y= GHR_ddCt, fill=Stage)) + geom_boxplot() +
+ggplot(prlr, aes(x=Stage, y= GHR_ddCT, fill=Stage)) + geom_boxplot() +
     guides(fill=FALSE) + 
     stat_summary(fun.y=mean, geom="point", shape=5, size=4)+
     theme(axis.text=element_text(size=12),
@@ -137,13 +204,22 @@ ggplot(prlr, aes(x=Stage, y= GHR_ddCt, fill=Stage)) + geom_boxplot() +
     ylim(-10,10)
 
 #sex and stage
-ggplot(aes(y = GHR_ddCt, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
+ggplot(aes(y = GHR_ddCT, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
     theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold"),
         plot.caption = element_text(size=10, hjust=0))+
     labs(title = "Growth hormone receptor relative expression, by stage and sex", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
     ylim(-10,10)
 
+#sex by stage plot, with no visibile outliers (but original data distribution)
+ghr.plot<- ggplot(aes(y = GHR_ddCT, x = Stage, fill = Sex), data = prlr) + geom_boxplot(outlier.size = NA)+ 
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Growth hormone receptor relative expression, by stage", y = "ddCt \n(building as control)")+
+   ylim(-7,7) 
+print(ghr.plot)
+  
 
 ```
 
@@ -160,7 +236,7 @@ prlr$GHR_resid<-studres(f3)
 Prolactin (gene expression for the peptide hormone transcript) exhibited lower expression than the other genes. Prolactin expression showed a similar pattern to prolactin receptor, with a slight increase in expression around hatch. However, the manipulation seems to have increased prolactin expression slightly compared to incubation day 9, especially in male birds. 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #boxplots for each stage
-ggplot(prlr, aes(x=Stage, y= PRL_ddCt, fill=Stage)) + geom_boxplot() +
+ggplot(prlr, aes(x=Stage, y= PRL_ddCT, fill=Stage)) + geom_boxplot() +
     guides(fill=FALSE) + 
     stat_summary(fun.y=mean, geom="point", shape=5, size=4)+
     theme(axis.title=element_text(face="bold"),
@@ -169,7 +245,7 @@ ggplot(prlr, aes(x=Stage, y= PRL_ddCt, fill=Stage)) + geom_boxplot() +
      ylim(-10,10)
 
 #sex and stage
-ggplot(aes(y = PRL_ddCt, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
+ggplot(aes(y = PRL_ddCT, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
     theme(
         axis.title=element_text(face="bold"),
         plot.caption = element_text(size=10, hjust=0))+
@@ -179,7 +255,7 @@ ggplot(aes(y = PRL_ddCt, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
 
 An ANOVA showed no significant effect of parental care stage or sex on prolactin expression.
 ```{r}
-f4<-lm(PRL_norm~ Stage*Sex, data=prlr, na.action=na.exclude)
+f4<-lm(PRL_ddCT~ Stage*Sex, data=prlr, na.action=na.exclude)
 Anova(f4)
 
 #creates a new column holding the Studentized residuals for the model
@@ -190,14 +266,19 @@ prlr$PRL_resid<-studres(f4)
 noOutPRLR<-subset(prlr, PRLR_resid<= 2.00 & PRLR_resid>= -2.00)
 noOutGHR<-subset(prlr, GHR_resid<= 2.00 & GHR_resid>= -2.00)
 noOutPRL<-subset(prlr, PRL_resid<= 2.00 & PRL_resid>= -2.00)
-
+#sample size
+counts.prlr<-table(noOutPRLR$Sex, noOutPRLR$Stage)
+counts.ghr<-table(noOutGHR$Sex, noOutGHR$Stage)
+counts.prl<-table(noOutPRL$Sex, noOutPRL$Stage)
 #re-run ANOVAs on these datasets 
 f2no<-lm(PRLR_ddCT~ Stage*Sex, data=noOutPRLR)
 Anova(f2no)
+lsmeans(f2no, pairwise~Stage, adjust="tukey") #posthoc comparisons
 f3no<-lm(GHR_ddCT~ Stage*Sex, data=noOutGHR)
 Anova(f3no)
 f4no<-lm(PRL_ddCT~ Stage*Sex, data=noOutPRL)
 Anova(f4no)
+lsmeans(f4no, pairwise~Sex|Stage, adjust="tukey")
 
 #run outlier analysis on these new ANOVAs
 qqPlot(f2no, main="QQ Plot: PRLR no outliers")  
@@ -214,13 +295,36 @@ kw.prlr<-kruskal.test(PRLR_ddCT~Stage, data=prlr)
 kw.ghr<-kruskal.test(GHR_ddCT~Stage, data=prlr)
 kw.prl<-kruskal.test(PRL_ddCT~Stage, data=prlr)
 
+#plots without outliers
+ggplot(aes(y = PRLR_ddCT, x = Stage, fill = Sex), data = noOutPRLR) + geom_boxplot()+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0.5))+
+    labs(title = "PRL receptor relative expression, by stage",subtitle="Outliers removed", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+   ylim(-10,10)+
+  theme(plot.subtitle = element_text(hjust = 0.5))+
+  scale_fill_brewer(palette="Blues")
+
 ggplot(noOutGHR, aes(x=Stage, y= GHR_ddCT, fill=Stage)) + geom_boxplot() +
     guides(fill=FALSE) + 
     stat_summary(fun.y=mean, geom="point", shape=5, size=4)+
     theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold"),
         plot.caption = element_text(size=10, hjust=0))+
-    labs(title = "Growth hormone receptor relative expression, by stage", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+    labs(title = "Growth hormone receptor relative expression, by stage",subtitle="Outliers removed", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+   theme(plot.subtitle = element_text(hjust = 0.5), plot.caption=element_text(hjust=0.5))+
+  scale_fill_grey()+
     ylim(-10,10)
+ggplot(noOutPRL, aes(x=Stage, y= PRL_ddCT, fill=Stage)) + geom_boxplot() +
+    guides(fill=FALSE) + 
+    stat_summary(fun.y=mean, geom="point", shape=5, size=4)+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Prolactin relative expression, by stage",subtitle="Outliers removed", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+  theme(plot.subtitle = element_text(hjust = 0.5), plot.caption=element_text(hjust=0.5))+
+  scale_fill_grey()+
+    ylim(-10,10)
+
 ```
  
