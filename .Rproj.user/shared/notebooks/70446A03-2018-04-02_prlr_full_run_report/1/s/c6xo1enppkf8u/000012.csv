@@ -1,5 +1,0 @@
-"0","#large circles outside the boundary of -2 to 2 are outliers "
-"0","# Cook's D plot"
-"0","# identify D values > 4/(n-k-1) "
-"0","cutoff <- 4/((nrow(prlr)-length(f2$coefficients)-2)) "
-"0","plot(f2, which=4, cook.levels=cutoff)"

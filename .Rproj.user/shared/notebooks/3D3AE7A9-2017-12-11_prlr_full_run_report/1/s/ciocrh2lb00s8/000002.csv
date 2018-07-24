@@ -1,2 +1,0 @@
-"0","counts<-table(prlr$Sex, prlr$Stage)"
-"0","bb<-barplot(counts, main = ""Sample size by stage and sex"", xlab = ""Parental care stage"", col=c(""sienna2"", ""turquoise2""), legend= rownames(counts), legend.text=TRUE, args.legend=list(x=ncol(counts) + 1, y=max(colSums(counts)), bty = ""n"")) #hacky solution to making the legend not overlap with the bars"

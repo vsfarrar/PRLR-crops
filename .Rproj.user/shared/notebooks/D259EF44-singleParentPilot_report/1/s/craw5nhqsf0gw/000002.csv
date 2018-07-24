@@ -1,2 +1,0 @@
-"0","ggplot(aes(y = GnRH_ddCt, x = parental_state, fill = parental_state), data = data) + geom_boxplot() +"
-"0","  labs(title = ""GnRH expression"", x= ""Parental state"", y=""GnRH ddCt"")"

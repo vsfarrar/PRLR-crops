@@ -1,2 +1,0 @@
-"0","print<-bb"
-"0","text(bb,counts[1,]-4,labels=counts[1,],cex=.8) #prints sample size on the bars"

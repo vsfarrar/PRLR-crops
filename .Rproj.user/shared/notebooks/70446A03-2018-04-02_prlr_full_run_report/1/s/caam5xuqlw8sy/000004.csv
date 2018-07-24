@@ -1,7 +1,0 @@
-"0","ggplot(prlr) + "
-"0","  geom_bar(aes(Stage, refgene, fill = Sex), "
-"0","           position = ""dodge"", stat = ""summary"", fun.y = ""mean"")+"
-"0","  labs(title = ""Reference gene amplification across time points"", x= ""Time point"", y=""geometric mean of ACTB and rpL4 Ct"")+"
-"0","   scale_y_reverse( lim=c(25,0))"
-"2","Error: Discrete value supplied to continuous scale
-"

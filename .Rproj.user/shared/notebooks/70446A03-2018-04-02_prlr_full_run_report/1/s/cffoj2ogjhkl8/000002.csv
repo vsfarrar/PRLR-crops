@@ -1,5 +1,0 @@
-"0","f1 <- lm(refgene ~ Stage*Sex,data=prlr)"
-"0","Anova(f1)"
-"2","Error in Anova.lm(f1) : 
-  residual sum of squares is 0 (within rounding error)
-"

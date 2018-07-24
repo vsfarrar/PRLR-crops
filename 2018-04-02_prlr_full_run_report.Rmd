@@ -18,8 +18,7 @@ library(lsmeans)
 library(nlme)
 library(car)
 library(multcompView)
-prlr<-read.csv(file="~/Documents/2018-04-03_PRLR_project_results.csv")
-
+prlr<-read.csv(file="~/Documents/2018-04-02_PRLR_project_results.csv")
 ```
 ### Sample size 
 We ran 85 samples, each in duplicate for each reference gene and gene of interest.  
@@ -90,17 +89,6 @@ An ANOVA analysis of normalized Ct values by time point failed to reject the nul
 ```{r, message=FALSE, warning=FALSE}
 f2<-lm(PRLR_ddCt~ Stage*Sex, data=prlr)
 Anova(f2)
-
-#outlier analysis for prolactin data
-qqPlot(f2, main="QQ Plot")  #looks ok
-influencePlot(f2,	id.method="identify", main="Influence Plot", sub="Circle size is proportial to Cook's Distance" ) 
-#large circles outside the boundary of -2 to 2 are outliers 
-
-
-# Cook's D plot
-# identify D values > 4/(n-k-1) 
-cutoff <- 4/((nrow(prlr)-length(f2$coefficients)-2)) 
-plot(f2, which=4, cook.levels=cutoff)
 ```
 ###Growth hormone receptor 
 Interestingly, growth hormone receptor shows a trend of slightly increasing through incubation, but decreasing at hatch. Again, the manipulation on day 8 appears similar to the day 9 expression levels, not similar to hatch. 

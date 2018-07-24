@@ -1,8 +1,0 @@
-"0","#boxplots for each stage"
-"0","ggplot(prlr, aes(x=Stage, y= PRL_ddCt, fill=Stage)) + geom_boxplot() +"
-"0","    guides(fill=FALSE) + "
-"0","    stat_summary(fun.y=mean, geom=""point"", shape=5, size=4)+"
-"0","    theme(axis.title=element_text(face=""bold""),"
-"0","        plot.caption = element_text(size=10, hjust=0))+"
-"0","    labs(title = ""Prolactin expression, by stage"", y = ""ddCt \n(building as control)"",caption = ""Median values represented by dark lines, mean indicated by diamonds."")+"
-"0","     ylim(-10,10)"
