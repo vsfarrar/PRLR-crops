@@ -20,7 +20,8 @@ library(multcompView)
 library(plyr)
 library(MASS)
 #library(ggsignif)
-prlr<-read.csv(file="~/Documents/2018-04-16_PRLR_project_results.csv",na.strings="NA")
+prlr<-read.csv(file="~/Documents/2018-04-03_PRLR_project_results.csv",na.strings="NA")
+#keep as 4/3/18 file, since this has correct directionality (sign, positive or negative) of ddCt
 ```
 ### Sample size 
 We ran 85 samples, each in duplicate for each reference gene and gene of interest.  
@@ -109,7 +110,7 @@ ggplot(prlr, aes(x=Stage, y= PRLR_ddCT, fill=Stage)) + geom_boxplot() +
     theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold"),
         plot.caption = element_text(size=10, hjust=0))+
-    labs(title = "Prolactin receptor relative expression, by stage", y = "Fold change \n(relative to building)",caption = "")+
+    labs(title = "Prolactin receptor relative expression, by stage", y = "Relative expression \n(building as control)",caption = "")+
    ylim(-10,10)
 
 #sex and stage
@@ -117,7 +118,7 @@ ggplot(aes(y = PRLR_ddCT, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
     theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold"),
         plot.caption = element_text(size=10, hjust=0))+
-    labs(title = "Prolactin receptor relative expression, by stage", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+    labs(title = "Prolactin receptor relative expression, by stage", y = "Relative expression \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
    ylim(-10,10)
 
 #calculating post-hoc letter grouping locations
@@ -135,7 +136,7 @@ prlr.plot<- ggplot(aes(y = PRLR_ddCT, x = Stage, fill = Sex), data = prlr) + geo
     theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold"),
         plot.caption = element_text(size=10, hjust=0))+
-    labs(title = "Prolactin receptor relative expression, by stage", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+    labs(title = "Prolactin receptor relative expression, by stage", y = "Relative expression \n(building as control)",caption = "Distribution based upon full dataset (including outliers)")+
   geom_text(data = labs.prlr, aes(x = Stage, y = PRLR_ddCT, label = Letters),vjust=-5.5,hjust=-.5, inherit.aes = FALSE)+
    ylim(-7,7) 
 print(prlr.plot)
@@ -200,7 +201,7 @@ ggplot(prlr, aes(x=Stage, y= GHR_ddCT, fill=Stage)) + geom_boxplot() +
     theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold"),
         plot.caption = element_text(size=10, hjust=0))+
-    labs(title = "Growth hormone receptor relative expression, by stage", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+    labs(title = "Growth hormone receptor relative expression, by stage", y = "Relative expression \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
     ylim(-10,10)
 
 #sex and stage
@@ -208,7 +209,7 @@ ggplot(aes(y = GHR_ddCT, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
     theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold"),
         plot.caption = element_text(size=10, hjust=0))+
-    labs(title = "Growth hormone receptor relative expression, by stage and sex", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+    labs(title = "Growth hormone receptor relative expression, by stage and sex", y = "Relative expression \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
     ylim(-10,10)
 
 #sex by stage plot, with no visibile outliers (but original data distribution)
@@ -216,7 +217,7 @@ ghr.plot<- ggplot(aes(y = GHR_ddCT, x = Stage, fill = Sex), data = prlr) + geom_
     theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold"),
         plot.caption = element_text(size=10, hjust=0))+
-    labs(title = "Growth hormone receptor relative expression, by stage", y = "ddCt \n(building as control)")+
+    labs(title = "Growth hormone receptor relative expression, by stage", y = "Relative expression \n(building as control)")+
    ylim(-7,7) 
 print(ghr.plot)
   
@@ -241,15 +242,15 @@ ggplot(prlr, aes(x=Stage, y= PRL_ddCT, fill=Stage)) + geom_boxplot() +
     stat_summary(fun.y=mean, geom="point", shape=5, size=4)+
     theme(axis.title=element_text(face="bold"),
         plot.caption = element_text(size=10, hjust=0))+
-    labs(title = "Prolactin expression, by stage", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+    labs(title = "Prolactin expression, by stage", y = "Relative expression \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
      ylim(-10,10)
 
 #sex and stage
-ggplot(aes(y = PRL_ddCT, x = Stage, fill = Sex), data = prlr) + geom_boxplot()+
+ggplot(aes(y = PRL_ddCT, x = Stage, fill = Sex), data = prlr) + geom_boxplot(outlier.size = NA)+
     theme(
         axis.title=element_text(face="bold"),
         plot.caption = element_text(size=10, hjust=0))+
-    labs(title = "Prolactin expression, by stage and sex", y = "ddCt \n(building as control)",caption = "Median values represented by dark lines, mean indicated by diamonds.")+
+    labs(title = "Prolactin expression, by stage and sex", y = "Relative expression \n(building as control)",caption = "")+
      ylim(-10,10)
 ```
 
@@ -325,6 +326,14 @@ ggplot(noOutPRL, aes(x=Stage, y= PRL_ddCT, fill=Stage)) + geom_boxplot() +
   theme(plot.subtitle = element_text(hjust = 0.5), plot.caption=element_text(hjust=0.5))+
   scale_fill_grey()+
     ylim(-10,10)
+
+#sex and stage
+ggplot(aes(y = PRL_ddCT, x = Stage, fill = Sex), data = noOutPRL) + geom_boxplot(outlier.size = NA)+
+    theme(
+        axis.title=element_text(face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+    labs(title = "Prolactin expression, by stage and sex", y = "Relative expression \n(building as control)",caption = "")+
+     ylim(-10,10)
 
 ```
  
