@@ -1,0 +1,1 @@
+"0","text(bb,colSums(counts)-4,labels=counts[2,],cex=0.8)"

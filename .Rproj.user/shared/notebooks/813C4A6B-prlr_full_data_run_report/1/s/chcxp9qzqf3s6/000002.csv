@@ -1,0 +1,22 @@
+"0","library(ggplot2)"
+"0","library(cowplot)"
+"2","
+Attaching package: ‘cowplot’
+
+"
+"2","The following object is masked from ‘package:ggplot2’:
+
+    ggsave
+
+"
+"0","library(knitr)"
+"0","library(lme4)"
+"0","library(lsmeans)"
+"0","library(nlme)"
+"0","library(car)"
+"0","library(multcompView)"
+"0","library(plyr)"
+"0","library(MASS)"
+"0","#library(ggsignif)"
+"0","prlr<-read.csv(file=""~/Documents/2018-04-03_PRLR_project_results.csv"",na.strings=""NA"")"
+"0","#keep as 4/3/18 file, since this has correct directionality (sign, positive or negative) of ddCt"

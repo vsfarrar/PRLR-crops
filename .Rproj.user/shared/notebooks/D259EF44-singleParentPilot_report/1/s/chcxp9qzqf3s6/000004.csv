@@ -1,0 +1,3 @@
+"0","data$MR_log<-log(data$MR_ddCt)
+"
+"2","NaNs produced"
