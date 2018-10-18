@@ -1,0 +1,141 @@
+---
+title: "Prolactin/Receptor Data"
+author: "Victoria"
+date: "10/16/2018"
+output: html_document
+---
+
+```{r data, include=FALSE}
+library(tidyverse)
+prl<-read.csv(file="~/Documents/lab/PRL_PRLR_RNAseq_data.csv")
+
+prl.long<-prl %>% gather(key="bird",value = "counts",4:991, factor_key = TRUE) #wide to long
+prl.long$TranscriptID<-NULL #removes meaningless columns
+prl.long$Num<-NULL 
+prl.long<-separate(data = prl.long, col = bird, into = c("bird_id", "sex", "tissue","stage"), sep = "_") #splits bird details into separate columns by _ separator
+prl.long$counts<-as.numeric(prl.long$counts)
+prl.long$stage<-as.factor(prl.long$stage)
+prl.long$manip <- ifelse(grepl("m", prl.long$stage), "manipulation", "characterization")
+
+prl.long$stage <- factor(prl.long$stage, levels=c("control", "bldg", "lay", "inc.d3", "m.inc.d3", "m.inc.d8", "d9", "m.inc.d9", "inc.d17", "m.inc.d17", "hatch", "extend", "extend.hatch", "prolong", "inc.prolong", "m.hatch", "n5", "n9")) #manually re-orders stages.
+
+prl.long$timept<-prl.long$stage #create numerical "timept" variable for ordering stages
+levels(prl.long$timept)<-c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18") #rename levels in bulk! saves lines of code. 
+prl.long$timept<-as.numeric(prl.long$timept) #continuous, numerical variable for x axis
+
+prl.long$log.exp<-log(prl.long$counts) #log transform counts data 
+```
+
+```{r}
+
+#PLOT
+prl.long %>%
+  subset(tissue=="hypothalamus" & geneid=="prlr" & manip=="characterization") %>%
+  ggplot(aes(x = factor(stage), y = counts, colour = sex)) +
+  geom_point()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  labs(title="Hypothalamus PRLR")
+
+prl.long %>%
+  subset(tissue=="hypothalamus" & geneid=="prl" & manip=="characterization") %>%
+  ggplot(aes(x = factor(stage), y = counts, colour = sex)) +
+  geom_point()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  scale_y_continuous(limits = c(0, 2000))+
+  labs(title="Hypothalamus PRL")
+#what are all my NAs in this plot?
+
+#PLOTS BELOW WORK!
+#next: bring line to front, change sex colors (orange,violet),change ggplot dimensions for poster, import original stage labels 
+pit.avg<-prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & manip=="characterization") %>%
+    group_by(timept) %>%
+    summarise(avg_exp = mean(counts, na.rm = TRUE))
+
+pit.avg %>% 
+  ggplot(aes(x = timept, y = avg_exp)) +
+  geom_line(col="black", size=1, alpha=0.75) +
+  geom_point(aes(x=timept, y=counts, color=sex), data = prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & manip=="characterization"),inherit.aes = FALSE,size =3, alpha  =0.5)+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  #scale_y_continuous(limits = c(0, 2000))+
+  labs(title="PIT PRL")+
+  theme_minimal()
+
+prl.long %>%
+  subset(tissue=="pituitary" & geneid=="prl" & manip=="characterization") %>%
+  ggplot(aes(x = timept, y = counts)) +
+  geom_line(col="black", size=1, alpha=0.75)+
+  geom_point(aes(x=timept, y=counts, colour=sex))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  #scale_y_continuous(limits = c(0, 2000))+
+  labs(title="PIT PRL")
+```
+
+```{r histograms, eval=FALSE}
+#huge amounts of outliers!
+#histogram of prl expression by tissue 
+#heavy right skew, especially in pituitary
+prl.long %>% filter(geneid=="prl") %>%
+ggplot(aes(x=counts)) + 
+    geom_histogram(data=subset(prl.long,tissue=="hypothalamus"),fill = "red", alpha = 0.2) +
+    geom_histogram(data=subset(prl.long,tissue=="pituitary"),fill = "blue", alpha = 0.2) +
+    geom_histogram(data=subset(prl.long,tissue=="gonad"),fill = "green", alpha = 0.2) + 
+    xlim(0,2500) #does not remove outliers, but limits their influence on the plot 
+
+#histogram of prlr expression by tissue
+#similar pattern, heavy right skew esp. in pit
+prl.long %>% filter(geneid=="prlr") %>%
+ggplot(aes(x=counts)) + 
+    geom_histogram(data=subset(prl.long,tissue=="hypothalamus"),fill = "red", alpha = 0.2) +
+    geom_histogram(data=subset(prl.long,tissue=="pituitary"),fill = "blue", alpha = 0.2) +
+    geom_histogram(data=subset(prl.long,tissue=="gonad"),fill = "green", alpha = 0.2) +
+    xlim(0,2000)
+
+prl.long$log.exp<-log(prl.long$counts) #log transform counts data 
+
+#look at distributions given the log transformed counts 
+
+prl.long %>% filter(geneid=="prl") %>%  #PRL
+ggplot(aes(x=log.exp)) + 
+    geom_histogram(data=subset(prl.long,tissue=="hypothalamus"),fill = "red", alpha = 0.2) +
+    geom_histogram(data=subset(prl.long,tissue=="pituitary"),fill = "blue", alpha = 0.2) +
+    geom_histogram(data=subset(prl.long,tissue=="gonad"),fill = "green", alpha = 0.2) 
+#bimodal distribution in pituitary PRL
+
+prl.long %>% filter(geneid=="prlr") %>%  #PRLR
+ggplot(aes(x=log.exp)) + 
+    geom_histogram(data=subset(prl.long,tissue=="hypothalamus"),fill = "red", alpha = 0.2) +
+    geom_histogram(data=subset(prl.long,tissue=="pituitary"),fill = "blue", alpha = 0.2) +
+    geom_histogram(data=subset(prl.long,tissue=="gonad"),fill = "green", alpha = 0.2)
+#bimodal distribution in pituitary PRL - is this an artifact of log transformation?
+
+```
+```{r linear models}
+#ANOVAs to start, lots of significance....
+prl.long$bird_id<-as.factor(prl.long$bird_id)
+pit.prl<-prl.long %>% filter(tissue=="pituitary" & geneid=="prl")
+anova(glm(log.exp~stage*sex, data=pit.prl, family="gaussian"), test="Chisq")
+anova(glm(log.exp~stage*sex, data=pit.prl, family="gaussian"), test="F")
+
+
+pit.prlr<-prl.long %>% filter(tissue=="pituitary" & geneid=="prlr")
+anova(glm(log.exp~stage*sex, data=pit.prlr, family="gaussian"), test="Chisq")
+
+
+hyp.prl<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prl")
+anova(glm(log.exp~stage*sex, data=hyp.prl, family="gaussian"), test="Chisq")
+
+hyp.prlr<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prlr")
+anova(glm(log.exp~stage*sex, data=hyp.prlr, family="gaussian"), test="Chisq")
+
+gnd.prl<-prl.long %>% filter(tissue=="gonad" & geneid=="prl")
+anova(glm(log.exp~stage*sex, data=gnd.prl, family="gaussian"), test="Chisq")
+
+gnd.prlr<-prl.long %>% filter(tissue=="gonad" & geneid=="prlr")
+anova(glm(log.exp~stage*sex, data=gnd.prlr, family="gaussian"), test="Chisq")
+```
+#what are all my NAs in this plot?
+https://github.com/Cyranka/rviz/blob/master/tidy_tuesday_week_28/create_graphs.R#L50
+
+Re-naming levels in bulk: https://stackoverflow.com/questions/29711067/how-to-change-name-of-factor-levels
+
+```
