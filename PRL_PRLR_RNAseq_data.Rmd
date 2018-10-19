@@ -7,6 +7,9 @@ output: html_document
 
 ```{r data, include=FALSE}
 library(tidyverse)
+library(officer)#creates Ppt slides
+library(rvg)#sends ggplot to ppt
+
 prl<-read.csv(file="~/Documents/lab/PRL_PRLR_RNAseq_data.csv")
 
 prl.long<-prl %>% gather(key="bird",value = "counts",4:991, factor_key = TRUE) #wide to long
@@ -15,59 +18,139 @@ prl.long$Num<-NULL
 prl.long<-separate(data = prl.long, col = bird, into = c("bird_id", "sex", "tissue","stage"), sep = "_") #splits bird details into separate columns by _ separator
 prl.long$counts<-as.numeric(prl.long$counts)
 prl.long$stage<-as.factor(prl.long$stage)
-prl.long$manip <- ifelse(grepl("m", prl.long$stage), "manipulation", "characterization")
+prl.long$manip <- ifelse(grepl("m", prl.long$stage), "y", "n") #y = yes, manipulation ; n=no,not a manip, a characterization
 
-prl.long$stage <- factor(prl.long$stage, levels=c("control", "bldg", "lay", "inc.d3", "m.inc.d3", "m.inc.d8", "d9", "m.inc.d9", "inc.d17", "m.inc.d17", "hatch", "extend", "extend.hatch", "prolong", "inc.prolong", "m.hatch", "n5", "n9")) #manually re-orders stages.
+prl.long$stage <- factor(prl.long$stage, levels=c("control", "bldg", "lay", "inc.d3", "m.inc.d3","inc.d9", "m.inc.d8", "m.inc.d9", "inc.d17", "m.inc.d17", "hatch", "extend", "extend.hatch", "prolong", "inc.prolong", "m.hatch", "n5", "n9")) #manually re-orders stages.
 
 prl.long$timept<-prl.long$stage #create numerical "timept" variable for ordering stages
 levels(prl.long$timept)<-c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18") #rename levels in bulk! saves lines of code. 
 prl.long$timept<-as.numeric(prl.long$timept) #continuous, numerical variable for x axis
 
+#focal variable indicates time points I care about specifically 
+prl.long$focal<-prl.long$timept
+prl.long$focal<-ifelse(prl.long$stage %in% c("bldg", "lay", "inc.d3", "m.inc.d8", "inc.d9", "inc.d17", "hatch"), "y", "n") #if the stage is in the list of accepted values, focal is yes, otherwise, no. 
+
 prl.long$log.exp<-log(prl.long$counts) #log transform counts data 
+
 ```
 
-```{r}
-
-#PLOT
-prl.long %>%
-  subset(tissue=="hypothalamus" & geneid=="prlr" & manip=="characterization") %>%
-  ggplot(aes(x = factor(stage), y = counts, colour = sex)) +
-  geom_point()+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  labs(title="Hypothalamus PRLR")
-
-prl.long %>%
-  subset(tissue=="hypothalamus" & geneid=="prl" & manip=="characterization") %>%
-  ggplot(aes(x = factor(stage), y = counts, colour = sex)) +
-  geom_point()+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  scale_y_continuous(limits = c(0, 2000))+
-  labs(title="Hypothalamus PRL")
-#what are all my NAs in this plot?
-
-#PLOTS BELOW WORK!
-#next: bring line to front, change sex colors (orange,violet),change ggplot dimensions for poster, import original stage labels 
-pit.avg<-prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & manip=="characterization") %>%
+```{r hyp plots}
+hyp.avg<-prl.long %>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prl") %>%
     group_by(timept) %>%
     summarise(avg_exp = mean(counts, na.rm = TRUE))
 
-pit.avg %>% 
+hyp.prl<-hyp.avg%>% 
   ggplot(aes(x = timept, y = avg_exp)) +
-  geom_line(col="black", size=1, alpha=0.75) +
-  geom_point(aes(x=timept, y=counts, color=sex), data = prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & manip=="characterization"),inherit.aes = FALSE,size =3, alpha  =0.5)+
+  geom_point(aes(x=timept, y=counts, color=sex, fill=sex), data = prl.long %>% filter(tissue=="hypothalamus" & geneid=="prl" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ #pch gives points a border #fill controls interior, color controls borders
+  geom_line(col="grey43", size=1, alpha=1) + #order matters, brings line to front
+  scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ #labels continuous x axis with stages
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  #scale_y_continuous(limits = c(0, 2000))+
-  labs(title="PIT PRL")+
+  labs(title="HYP PRL") +
   theme_minimal()
 
-prl.long %>%
-  subset(tissue=="pituitary" & geneid=="prl" & manip=="characterization") %>%
-  ggplot(aes(x = timept, y = counts)) +
-  geom_line(col="black", size=1, alpha=0.75)+
-  geom_point(aes(x=timept, y=counts, colour=sex))+
+#HYP PRL   #one block of code subset to plot, using pipes 
+hyp.prlr<-prl.long %>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prlr") %>%
+    group_by(timept) %>%
+    summarise(avg_exp = mean(counts, na.rm = TRUE)) %>%
+  ggplot(aes(x = timept, y = avg_exp)) +
+  geom_point(aes(x=timept, y=counts, color=sex, fill=sex), data = prl.long %>% filter(tissue=="hypothalamus" & geneid=="prlr" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
+  geom_line(col="grey43", size=1, alpha=1) + 
+  scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ 
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  #scale_y_continuous(limits = c(0, 2000))+
-  labs(title="PIT PRL")
+  labs(title="HYP PRL-R") +
+  theme_minimal()
+
+ print(hyp.prl)
+ print(hyp.prlr)
+```
+```{r pit plots}
+#PIT PRL  
+pit.prl<-prl.long %>% 
+  filter(focal=="y" & tissue=="pituitary" & geneid=="prl") %>%
+  group_by(timept) %>%
+  summarise(avg_exp = mean(counts, na.rm = TRUE)) %>%
+  ggplot(aes(x = timept, y = avg_exp)) +
+    geom_point(aes(x=timept, y=counts, color=sex, fill=sex), data = prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
+    geom_line(col="grey43", size=1, alpha=1) + 
+    scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+    labs(title="Pit PRL") +
+    theme_minimal()
+
+#PIT PRLR
+pit.prlr<-prl.long %>% 
+  filter(focal=="y" & tissue=="pituitary" & geneid=="prlr") %>%
+  group_by(timept) %>%
+  summarise(avg_exp = mean(counts, na.rm = TRUE)) %>%
+  ggplot(aes(x = timept, y = avg_exp)) +
+    geom_point(aes(x=timept, y=counts, color=sex, fill=sex), data = prl.long %>% filter(tissue=="pituitary" & geneid=="prlr" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
+    geom_line(col="grey43", size=1, alpha=1) + 
+    scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+    labs(title="Pit PRLR") +
+    theme_minimal()
+
+print(pit.prl)
+print(pit.prlr)
+```
+```{r gonad plots}
+#this is the only organ with log data plotted
+#the only organ with special distinctive lines for manipulation
+#GONAD PRL  
+gp<-prl.long %>% 
+  filter(focal=="y" & tissue=="gonad" & geneid=="prl") %>%
+  group_by(timept) %>%
+  summarise(avg_exp = mean(log.exp, na.rm = TRUE)) 
+gnd.prl<-gp %>%
+  ggplot(aes(x = timept, y = avg_exp)) +
+    geom_point(aes(x=timept, y=log.exp, color=sex, fill=sex), data = prl.long %>% filter(tissue=="gonad" & geneid=="prl" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
+    geom_line(col="grey43", size=1, alpha=1) + 
+    geom_line(data = gp[gp$timept >="6" & gp$timept <="7",], 
+              aes(x = timept, y = avg_exp),color="red", size = 1) + #adds a distinctive line for manipulation
+    scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+    labs(title="Gonad ePRL") +
+    theme_minimal()
+
+#GONAD PRLR
+gr<-prl.long %>% 
+  filter(focal=="y" & tissue=="gonad" & geneid=="prlr") %>%
+  group_by(timept) %>%
+  summarise(avg_exp = mean(log.exp, na.rm = TRUE)) 
+gnd.prlr<-gr %>%
+  ggplot(aes(x = timept, y = avg_exp)) +
+    geom_point(aes(x=timept, y=log.exp, color=sex, fill=sex), data = prl.long %>% filter(tissue=="gonad" & geneid=="prlr" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
+    geom_line(col="grey43", size=1, alpha=1) + 
+    geom_line(data = gr[gp$timept >="6" & gr$timept <="7",], 
+              aes(x = timept, y = avg_exp),color="red", size = 1) + #adds a distinctive line for manipulation
+    scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+    labs(title="Gonad PRLR") +
+    theme_minimal()
+
+print(gnd.prl)
+print(gnd.prlr)
+```
+
+```{r original plot code, eval=FALSE, echo=FLASE}
+
+#PLOTS BELOW WORK!####
+#next:change ggplot dimensions for poster.
+
+pit.avg<-prl.long %>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl") %>%
+    group_by(timept) %>%
+    summarise(avg_exp = mean(counts, na.rm = TRUE))
+
+ p1<-pit.avg %>% 
+  ggplot(aes(x = timept, y = avg_exp)) +
+  geom_point(aes(x=timept, y=counts, color=sex), data = prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & focal=="y"),inherit.aes = FALSE,size =3, alpha  =0.75)+ scale_color_manual(values=c("mediumpurple2","sienna1"))+
+  geom_line(col="gray", size=1, alpha=1) + #order matters, brings line to front
+  scale_x_continuous(breaks=c(2,3,4,6,9,11), labels=c("bldg", "lay", "inc.d3", "m.inc.d8",  "inc.d17", "hatch"))+ #labels continuous x axis with stages
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  labs(title="PIT PRL") +
+  theme_minimal()
+
+ggsave("pit_prl.png", plot = last_plot(), width=11, height=1.5, units="in", dpi=320)
 ```
 
 ```{r histograms, eval=FALSE}
@@ -109,6 +192,22 @@ ggplot(aes(x=log.exp)) +
 #bimodal distribution in pituitary PRL - is this an artifact of log transformation?
 
 ```
+```{r line plots comparing expression levels}
+all.prl<-prl.long %>% filter(geneid=="prl" & focal=="y") %>%
+  group_by(tissue,timept)%>%
+  summarize(avg_exp=mean(log.exp, na.rm = TRUE)) %>%
+  ggplot(aes(x=timept, y=avg_exp, color=tissue))+
+  geom_line(size=1, alpha=1) 
+print(all.prl)
+
+all.prlr<-prl.long %>% filter(geneid=="prlr" & focal=="y") %>%
+  group_by(tissue,timept)%>%
+  summarize(avg_exp=mean(log.exp, na.rm = TRUE)) %>%
+  ggplot(aes(x=timept, y=avg_exp, color=tissue))+
+  geom_line(size=1, alpha=1) 
+print(all.prlr)
+```
+
 ```{r linear models}
 #ANOVAs to start, lots of significance....
 prl.long$bird_id<-as.factor(prl.long$bird_id)
@@ -133,6 +232,15 @@ anova(glm(log.exp~stage*sex, data=gnd.prl, family="gaussian"), test="Chisq")
 gnd.prlr<-prl.long %>% filter(tissue=="gonad" & geneid=="prlr")
 anova(glm(log.exp~stage*sex, data=gnd.prlr, family="gaussian"), test="Chisq")
 ```
+
+```{r send to ppt, echo=FALSE}
+read_pptx() %>% 
+add_slide(layout = "Title and Content", master = "Office Theme") %>% 
+ph_with_vg(code = print(p1), type="body", bg = "transparent") %>%
+print(target = "~/Desktop/charts.pptx") %>% 
+invisible()
+```
+
 #what are all my NAs in this plot?
 https://github.com/Cyranka/rviz/blob/master/tidy_tuesday_week_28/create_graphs.R#L50
 
