@@ -9,6 +9,7 @@ output: html_document
 library(tidyverse)
 library(officer)#creates Ppt slides
 library(rvg)#sends ggplot to ppt
+library(lsmeans)
 
 prl<-read.csv(file="~/Documents/lab/PRL_PRLR_RNAseq_data.csv")
 
@@ -211,10 +212,11 @@ print(all.prlr)
 ```{r linear models}
 #ANOVAs to start, lots of significance....
 prl.long$bird_id<-as.factor(prl.long$bird_id)
-pit.prl<-prl.long %>% filter(tissue=="pituitary" & geneid=="prl")
-anova(glm(log.exp~stage*sex, data=pit.prl, family="gaussian"), test="Chisq")
-anova(glm(log.exp~stage*sex, data=pit.prl, family="gaussian"), test="F")
-
+pprl<-prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & focal=="y")
+m.pprl<- glm(log.exp~stage*sex, data=pprl, family="gaussian")
+anova(m.pprl, test="Chisq")
+summary(m.pprl)
+rbind((pairs(lsmeans(m.pprl, ~ stage | sex))),(pairs(lsmeans(m.pprl, ~ sex | stage)))) #contrasts with "mvt" method and Bonferroni correction
 
 pit.prlr<-prl.long %>% filter(tissue=="pituitary" & geneid=="prlr")
 anova(glm(log.exp~stage*sex, data=pit.prlr, family="gaussian"), test="Chisq")
@@ -236,7 +238,8 @@ anova(glm(log.exp~stage*sex, data=gnd.prlr, family="gaussian"), test="Chisq")
 ```{r send to ppt, echo=FALSE}
 read_pptx() %>% 
 add_slide(layout = "Title and Content", master = "Office Theme") %>% 
-ph_with_vg(code = print(p1), type="body", bg = "transparent") %>%
+ph_with_vg(code = print(hyp.prl), type="body", bg = "transparent") %>%
+ph_with_vg(code = print(hyp.prlr), type="body", bg = "transparent") %>%
 print(target = "~/Desktop/charts.pptx") %>% 
 invisible()
 ```
@@ -245,5 +248,8 @@ invisible()
 https://github.com/Cyranka/rviz/blob/master/tidy_tuesday_week_28/create_graphs.R#L50
 
 Re-naming levels in bulk: https://stackoverflow.com/questions/29711067/how-to-change-name-of-factor-levels
+Lsmeans constrast code from: 
+https://stats.stackexchange.com/questions/165125/lsmeans-r-adjust-for-multiple-comparisons-with-interaction-terms
+And grouping contrasts by letter https://www.researchgate.net/post/How_to_perform_Grouping_of_Pairwise_comparison_obtained_after_Tukey_Test_One_way_ANOVA
 
 ```
