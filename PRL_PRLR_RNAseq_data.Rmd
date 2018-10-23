@@ -36,15 +36,16 @@ prl.long$log.exp<-log(prl.long$counts) #log transform counts data
 ```
 
 ```{r hyp plots}
-hyp.avg<-prl.long %>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prl") %>%
+hyp.avg<-prl.long %>% filter(focal=="y" & tissue=="pituitary" & geneid=="prlr") %>%
     group_by(timept) %>%
-    summarise(avg_exp = mean(counts, na.rm = TRUE))
+    summarise(avg_exp = mean(log.exp, na.rm = TRUE)) #changed to average LOG expression
 
 hyp.prl<-hyp.avg%>% 
   ggplot(aes(x = timept, y = avg_exp)) +
-  geom_point(aes(x=timept, y=counts, color=sex, fill=sex), data = prl.long %>% filter(tissue=="hypothalamus" & geneid=="prl" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ #pch gives points a border #fill controls interior, color controls borders
+  geom_point(aes(x=timept, y=log.exp, color=sex, fill=sex), data = prl.long %>% filter(tissue=="hypothalamus" & geneid=="prl" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ #pch gives points a border #fill controls interior, color controls borders
   geom_line(col="grey43", size=1, alpha=1) + #order matters, brings line to front
   scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ #labels continuous x axis with stages
+  ylim(0,7)+
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
   labs(title="HYP PRL") +
   theme_minimal()
@@ -52,12 +53,13 @@ hyp.prl<-hyp.avg%>%
 #HYP PRL   #one block of code subset to plot, using pipes 
 hyp.prlr<-prl.long %>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prlr") %>%
     group_by(timept) %>%
-    summarise(avg_exp = mean(counts, na.rm = TRUE)) %>%
+    summarise(avg_exp = mean(log.exp, na.rm = TRUE)) %>%
   ggplot(aes(x = timept, y = avg_exp)) +
-  geom_point(aes(x=timept, y=counts, color=sex, fill=sex), data = prl.long %>% filter(tissue=="hypothalamus" & geneid=="prlr" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
+  geom_point(aes(x=timept, y=log.exp, color=sex, fill=sex), data = prl.long %>% filter(tissue=="hypothalamus" & geneid=="prlr" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
   geom_line(col="grey43", size=1, alpha=1) + 
   scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ 
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  ylim(0,7)+
   labs(title="HYP PRL-R") +
   theme_minimal()
 
@@ -69,11 +71,12 @@ hyp.prlr<-prl.long %>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prl
 pit.prl<-prl.long %>% 
   filter(focal=="y" & tissue=="pituitary" & geneid=="prl") %>%
   group_by(timept) %>%
-  summarise(avg_exp = mean(counts, na.rm = TRUE)) %>%
+  summarise(avg_exp = mean(log.exp, na.rm = TRUE)) %>%
   ggplot(aes(x = timept, y = avg_exp)) +
-    geom_point(aes(x=timept, y=counts, color=sex, fill=sex), data = prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
+    geom_point(aes(x=timept, y=log.exp, color=sex, fill=sex), data = prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
     geom_line(col="grey43", size=1, alpha=1) + 
     scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ 
+  ylim(6,14)+
     theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
     labs(title="Pit PRL") +
     theme_minimal()
@@ -82,9 +85,9 @@ pit.prl<-prl.long %>%
 pit.prlr<-prl.long %>% 
   filter(focal=="y" & tissue=="pituitary" & geneid=="prlr") %>%
   group_by(timept) %>%
-  summarise(avg_exp = mean(counts, na.rm = TRUE)) %>%
+  summarise(avg_exp = mean(log.exp, na.rm = TRUE)) %>%
   ggplot(aes(x = timept, y = avg_exp)) +
-    geom_point(aes(x=timept, y=counts, color=sex, fill=sex), data = prl.long %>% filter(tissue=="pituitary" & geneid=="prlr" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
+    geom_point(aes(x=timept, y=log.exp, color=sex, fill=sex), data = prl.long %>% filter(tissue=="pituitary" & geneid=="prlr" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
     geom_line(col="grey43", size=1, alpha=1) + 
     scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ 
     theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
@@ -94,6 +97,7 @@ pit.prlr<-prl.long %>%
 print(pit.prl)
 print(pit.prlr)
 ```
+
 ```{r gonad plots}
 #this is the only organ with log data plotted
 #the only organ with special distinctive lines for manipulation
@@ -132,6 +136,49 @@ gnd.prlr<-gr %>%
 print(gnd.prl)
 print(gnd.prlr)
 ```
+```{r crop data import, echo=FALSE}
+crops<-read.csv(file="~/Documents/2018-04-16_PRLR_project_results.csv")
+myvars<-c("ID","Stage","Sex","PRL_ddCT", "PRLR_ddCT") #variables I want to keep from csv
+crops<-crops[myvars] #subsets dataframe
+crops.long<-crops %>% gather(key="gene", value="ddCT", 4:5, factor_key=TRUE)#wide to long
+crops.long$Stage <- factor(crops.long$Stage, levels=c("Bldg", "Inc_D3", "Inc_D9","Manip_D8", "Hatch")) #manually re-orders stages.
+crops.long$timept<-crops.long$Stage #create numerical "timept" variable for ordering stages
+levels(crops.long$timept)<-c("1","2","3","4","5") #rename levels in bulk! saves lines of code.
+
+#log transform
+crops.long$log.exp<-log((crops.long$ddCT)+13) #add 13 to make all values positive, then log transform
+```
+
+```{r crop plots}
+#CROPS PRL
+cp<-crops.long %>% 
+  filter(gene=="PRL_ddCT")%>%
+  group_by(timept) %>%
+  summarise(avg_exp = round(mean(ddCT, na.rm = TRUE),2))
+crp.prl<-cp %>%
+  ggplot(aes(x = timept, y = avg_exp)) +
+    geom_point(aes(x=timept, y=-(ddCT), color=Sex, fill=Sex), data = crops.long %>% filter(gene=="PRL_ddCT"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
+    geom_line(col="grey43", size=1, alpha=1) + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+    labs(title="Crop ePRL") +
+    theme_minimal()
+print(crp.prl)
+
+#CROPS PRLR
+cr<-crops.long %>% 
+  filter(gene=="PRLR_ddCT")%>%
+  group_by(timept) %>%
+  summarise(avg_exp = round(mean(-(ddCT), na.rm = TRUE),2))
+crp.prlr<-cr %>%
+  ggplot(aes(x = timept, y = avg_exp)) +
+    geom_point(aes(x=timept, y=-(ddCT), color=Sex, fill=Sex), data = crops.long %>% filter(gene=="PRLR_ddCT"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
+    geom_line(col="grey43", size=1, alpha=1) + 
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+    labs(title="Crop PRLR") +
+    theme_minimal()
+print(crp.prlr)
+```
+
 
 ```{r original plot code, eval=FALSE, echo=FLASE}
 
@@ -194,54 +241,93 @@ ggplot(aes(x=log.exp)) +
 
 ```
 ```{r line plots comparing expression levels}
-all.prl<-prl.long %>% filter(geneid=="prl" & focal=="y") %>%
+#how can you put these two graphs together?
+all.prl<-prl.long %>% filter(focal=="y") %>%
   group_by(tissue,timept)%>%
   summarize(avg_exp=mean(log.exp, na.rm = TRUE)) %>%
   ggplot(aes(x=timept, y=avg_exp, color=tissue))+
-  geom_line(size=1, alpha=1) 
+  geom_line(size=1, alpha=1)
 print(all.prl)
 
-all.prlr<-prl.long %>% filter(geneid=="prlr" & focal=="y") %>%
-  group_by(tissue,timept)%>%
+
+prl.long<-mutate(prl.long,
+   tissxgene = paste(tissue, geneid,sep = ' ')) #creates the tissxgene value
+
+all.genes<-prl.long %>% filter(focal=="y" & tissue!= "gonad") %>%
+  group_by(tissxgene, timept)%>%
   summarize(avg_exp=mean(log.exp, na.rm = TRUE)) %>%
-  ggplot(aes(x=timept, y=avg_exp, color=tissue))+
-  geom_line(size=1, alpha=1) 
-print(all.prlr)
+  ggplot(aes(x=timept, y=avg_exp, color=tissxgene, linetype=tissxgene))+
+  geom_line(size=1, alpha=1)+
+  scale_x_continuous(breaks=c(2,3,4,6,9,11), labels=c("bldg", "lay", "inc.d3", "m.inc.d8",  "inc.d17", "hatch"))+
+  scale_linetype_manual(values=c("longdash", "solid","longdash","solid"))+
+  scale_color_manual(values=c("turquoise2", "turquoise4","salmon1","salmon3"))+
+  labs(y="log(estimated counts)", x="parental care stage")+
+  theme_minimal()
+print(all.genes + theme(legend.position="bottom"))
 ```
 
-```{r linear models}
+```{r lm hyp}
+
+#HYP PRL
+hprl<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prl" & focal=="y")
+m.hprl<- glm(log.exp~stage*sex, data=hprl, family="gaussian")
+anova(m.hprl, test="Chisq")
+#only an effect of stage on Hyp PRL
+summary(glm(log.exp~stage, data=hprl, family="gaussian")) 
+#post hoc only for stage
+pairs(lsmeans(m.hprl, ~ stage)) #contrasts with "mvt" method and Bonferroni correction
+
+#HYP PRLR
+hprlr<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prlr" & focal=="y")
+m.hprlr<- glm(log.exp~stage*sex, data=hprlr, family="gaussian")
+anova(m.hprlr, test="Chisq")
+#significant effect of stage and sex, but NO interaction
+summary(glm(log.exp~stage+sex, data=hprlr, family="gaussian")) #only m.inc.d8 signif. 
+pairs(lsmeans(m.hprlr, ~ stage)) #females less than males
+pairs(lsmeans(m.hprlr, ~ sex)) #contrasts with "mvt" method and Bonferroni correction
+rbind((pairs(lsmeans(m.hprlr, ~ stage | sex))),(pairs(lsmeans(m.hprlr, ~ sex | stage))))
+```
+```{r lm pit}
 #ANOVAs to start, lots of significance....
 prl.long$bird_id<-as.factor(prl.long$bird_id)
 pprl<-prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & focal=="y")
 m.pprl<- glm(log.exp~stage*sex, data=pprl, family="gaussian")
-anova(m.pprl, test="Chisq")
-summary(m.pprl)
+anova(m.pprl, test="Chisq") #effect of stage and sex, but no interaction 
+pairs(lsmeans(m.pprl, ~stage))
+pairs(lsmeans(m.pprl, ~sex))#females higher than males
 rbind((pairs(lsmeans(m.pprl, ~ stage | sex))),(pairs(lsmeans(m.pprl, ~ sex | stage)))) #contrasts with "mvt" method and Bonferroni correction
 
-pit.prlr<-prl.long %>% filter(tissue=="pituitary" & geneid=="prlr")
-anova(glm(log.exp~stage*sex, data=pit.prlr, family="gaussian"), test="Chisq")
 
+prl.long$bird_id<-as.factor(prl.long$bird_id)
+pprlr<-prl.long %>% filter(tissue=="pituitary" & geneid=="prlr" & focal=="y")
+m.pprlr<- glm(log.exp~stage*sex, data=pprlr, family="gaussian")
+anova(m.pprlr, test="Chisq") #effect of SEX only. no interaction
+pairs(lsmeans(m.pprlr, ~sex))#females lower than males 
 
-hyp.prl<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prl")
-anova(glm(log.exp~stage*sex, data=hyp.prl, family="gaussian"), test="Chisq")
+```
+```{r lm crops}
+cprl<-crops.long %>% filter(gene=="PRL_ddCT")
+m.cprl<- glm((-ddCT)~Stage*Sex, data=cprl, family="gaussian")
+anova(m.cprl, test="Chisq") #trend only towards effect of Sex. 
+m.cprl.sex<-glm((-ddCT)~Sex, data=cprl, family="gaussian")
+anova(m.cprl.sex, test="Chisq")
+pairs(lsmeans(m.cprl.sex, ~Sex))#females lower than males 
 
-hyp.prlr<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prlr")
-anova(glm(log.exp~stage*sex, data=hyp.prlr, family="gaussian"), test="Chisq")
-
-gnd.prl<-prl.long %>% filter(tissue=="gonad" & geneid=="prl")
-anova(glm(log.exp~stage*sex, data=gnd.prl, family="gaussian"), test="Chisq")
-
-gnd.prlr<-prl.long %>% filter(tissue=="gonad" & geneid=="prlr")
-anova(glm(log.exp~stage*sex, data=gnd.prlr, family="gaussian"), test="Chisq")
+cprlr<-crops.long %>% filter(gene=="PRLR_ddCT")
+m.cprlr<- glm((-ddCT)~Stage*Sex, data=cprlr, family="gaussian")
+anova(m.cprlr, test="Chisq") #effect of Stage only, not sex. 
+pairs(lsmeans(m.cprlr, ~Stage))#females lower than males 
 ```
 
 ```{r send to ppt, echo=FALSE}
 read_pptx() %>% 
 add_slide(layout = "Title and Content", master = "Office Theme") %>% 
-ph_with_vg(code = print(hyp.prl), type="body", bg = "transparent") %>%
-ph_with_vg(code = print(hyp.prlr), type="body", bg = "transparent") %>%
+ph_with_vg(code = print(all.genes), type="body", bg = "transparent") %>%
+  add_slide(layout = "Title and Content", master = "Office Theme") %>% 
+ph_with_vg(code = print(crp.prlr), type="body", bg = "transparent") %>%
 print(target = "~/Desktop/charts.pptx") %>% 
 invisible()
+
 ```
 
 #what are all my NAs in this plot?
