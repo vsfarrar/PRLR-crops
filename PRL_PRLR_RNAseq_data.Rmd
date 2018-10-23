@@ -29,73 +29,71 @@ prl.long$timept<-as.numeric(prl.long$timept) #continuous, numerical variable for
 
 #focal variable indicates time points I care about specifically 
 prl.long$focal<-prl.long$timept
-prl.long$focal<-ifelse(prl.long$stage %in% c("bldg", "lay", "inc.d3", "m.inc.d8", "inc.d9", "inc.d17", "hatch"), "y", "n") #if the stage is in the list of accepted values, focal is yes, otherwise, no. 
+prl.long$focal<-ifelse(prl.long$stage %in% c("bldg", "inc.d3", "m.inc.d8", "inc.d9", "hatch"), "y", "n") #if the stage is in the list of accepted values, focal is yes, otherwise, no. 
 
 prl.long$log.exp<-log(prl.long$counts) #log transform counts data 
 
 ```
 
 ```{r hyp plots}
-hyp.avg<-prl.long %>% filter(focal=="y" & tissue=="pituitary" & geneid=="prlr") %>%
-    group_by(timept) %>%
-    summarise(avg_exp = mean(log.exp, na.rm = TRUE)) #changed to average LOG expression
+bp.hyp.prl<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prl") %>%
+  ggplot(aes(y = log.exp, x = as.factor(timept)))+
+  geom_point(aes(colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_boxplot(outlier.shape=NA, alpha=0.25)+
+  scale_color_manual(values=c("purple3","salmon1"))+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0))+
+  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  labs(x=NULL,y="log(estimated counts)", title="Hypothalamus PRL")+
+  theme_classic()
+print(bp.hyp.prl)
 
-hyp.prl<-hyp.avg%>% 
-  ggplot(aes(x = timept, y = avg_exp)) +
-  geom_point(aes(x=timept, y=log.exp, color=sex, fill=sex), data = prl.long %>% filter(tissue=="hypothalamus" & geneid=="prl" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ #pch gives points a border #fill controls interior, color controls borders
-  geom_line(col="grey43", size=1, alpha=1) + #order matters, brings line to front
-  scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ #labels continuous x axis with stages
-  ylim(0,7)+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  labs(title="HYP PRL") +
-  theme_minimal()
-
-#HYP PRL   #one block of code subset to plot, using pipes 
-hyp.prlr<-prl.long %>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prlr") %>%
-    group_by(timept) %>%
-    summarise(avg_exp = mean(log.exp, na.rm = TRUE)) %>%
-  ggplot(aes(x = timept, y = avg_exp)) +
-  geom_point(aes(x=timept, y=log.exp, color=sex, fill=sex), data = prl.long %>% filter(tissue=="hypothalamus" & geneid=="prlr" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
-  geom_line(col="grey43", size=1, alpha=1) + 
-  scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-  ylim(0,7)+
-  labs(title="HYP PRL-R") +
-  theme_minimal()
-
- print(hyp.prl)
- print(hyp.prlr)
+bp.hyp.prlr<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prlr") %>%
+  ggplot(aes(y = log.exp, x = as.factor(timept)))+
+  geom_point(aes(colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_boxplot(outlier.shape=NA, alpha=0.25)+
+  scale_color_manual(values=c("purple3","salmon1"))+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0),
+        legend.position="none")+
+  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  labs(x=NULL,y="log(estimated counts)", title="Hypothalamus PRLR")+
+  theme_classic()
+print(bp.hyp.prlr)
 ```
 ```{r pit plots}
 #PIT PRL  
-pit.prl<-prl.long %>% 
-  filter(focal=="y" & tissue=="pituitary" & geneid=="prl") %>%
-  group_by(timept) %>%
-  summarise(avg_exp = mean(log.exp, na.rm = TRUE)) %>%
-  ggplot(aes(x = timept, y = avg_exp)) +
-    geom_point(aes(x=timept, y=log.exp, color=sex, fill=sex), data = prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
-    geom_line(col="grey43", size=1, alpha=1) + 
-    scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ 
-  ylim(6,14)+
-    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-    labs(title="Pit PRL") +
-    theme_minimal()
+bp.pit.prl<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl") %>%
+  ggplot(aes(y = log.exp, x = as.factor(timept)))+
+  geom_point(aes(colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_boxplot(outlier.shape=NA, alpha=0.25)+
+  scale_color_manual(values=c("purple3","salmon1"))+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0),
+        legend.position="none")+
+  scale_y_continuous(limits=c(7,14))+
+  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  labs(x=NULL,y="log(estimated counts)", title="Pit PRL")+
+  theme_classic()
 
-#PIT PRLR
-pit.prlr<-prl.long %>% 
-  filter(focal=="y" & tissue=="pituitary" & geneid=="prlr") %>%
-  group_by(timept) %>%
-  summarise(avg_exp = mean(log.exp, na.rm = TRUE)) %>%
-  ggplot(aes(x = timept, y = avg_exp)) +
-    geom_point(aes(x=timept, y=log.exp, color=sex, fill=sex), data = prl.long %>% filter(tissue=="pituitary" & geneid=="prlr" & focal=="y"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
-    geom_line(col="grey43", size=1, alpha=1) + 
-    scale_x_continuous(breaks=c(2,3,4,6,7,9,11), labels=c("bldg", "lay", "inc.d3", "inc.d9", "m.inc.d8",  "inc.d17", "hatch"))+ 
-    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-    labs(title="Pit PRLR") +
-    theme_minimal()
+bp.pit.prlr<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prlr") %>%
+  ggplot(aes(y = log.exp, x = as.factor(timept)))+
+  geom_point(aes(colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_boxplot(outlier.shape=NA, alpha=0.25)+
+  scale_color_manual(values=c("purple3","salmon1"))+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0),
+        legend.position="none")+
+  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  labs(x=NULL,y="log(estimated counts)", title="Pit PRLR")+
+  theme_classic()
 
-print(pit.prl)
-print(pit.prlr)
+print(bp.pit.prl)
+print(bp.pit.prlr)
 ```
 
 ```{r gonad plots}
@@ -150,33 +148,34 @@ crops.long$log.exp<-log((crops.long$ddCT)+13) #add 13 to make all values positiv
 ```
 
 ```{r crop plots}
-#CROPS PRL
-cp<-crops.long %>% 
-  filter(gene=="PRL_ddCT")%>%
-  group_by(timept) %>%
-  summarise(avg_exp = round(mean(ddCT, na.rm = TRUE),2))
-crp.prl<-cp %>%
-  ggplot(aes(x = timept, y = avg_exp)) +
-    geom_point(aes(x=timept, y=-(ddCT), color=Sex, fill=Sex), data = crops.long %>% filter(gene=="PRL_ddCT"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
-    geom_line(col="grey43", size=1, alpha=1) + 
-    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-    labs(title="Crop ePRL") +
-    theme_minimal()
-print(crp.prl)
+bp.crop.prl<- crops.long%>% filter(gene=="PRL_ddCT") %>%
+  ggplot(aes(y = -(ddCT), x = as.factor(timept)))+
+  geom_point(aes(colour=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_boxplot(outlier.shape=NA, alpha=0.25)+
+  scale_color_manual(values=c("purple3","salmon1"))+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0),
+        legend.position="none")+
+  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  labs(x=NULL,y="relative expression (ddCT)", title="Crop PRL")+
+  theme_classic()
 
-#CROPS PRLR
-cr<-crops.long %>% 
-  filter(gene=="PRLR_ddCT")%>%
-  group_by(timept) %>%
-  summarise(avg_exp = round(mean(-(ddCT), na.rm = TRUE),2))
-crp.prlr<-cr %>%
-  ggplot(aes(x = timept, y = avg_exp)) +
-    geom_point(aes(x=timept, y=-(ddCT), color=Sex, fill=Sex), data = crops.long %>% filter(gene=="PRLR_ddCT"),inherit.aes = FALSE,size =4, alpha  =0.75, pch=21)+ scale_fill_manual(values=c("mediumpurple2","sienna1")) + scale_color_manual(values=c("mediumpurple2","sienna4"))+ 
-    geom_line(col="grey43", size=1, alpha=1) + 
-    theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
-    labs(title="Crop PRLR") +
-    theme_minimal()
-print(crp.prlr)
+bp.crop.prlr<- crops.long%>% filter(gene=="PRLR_ddCT") %>%
+  ggplot(aes(y = -(ddCT), x = as.factor(timept)))+
+  geom_point(aes(colour=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_boxplot(outlier.shape=NA, alpha=0.25)+
+  scale_color_manual(values=c("purple3","salmon1"))+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0),
+        legend.position="none")+
+  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  labs(x=NULL,y="relative expression (ddCT)", title="Crop PRLR")+
+  theme_classic()
+
+print(bp.crop.prl)
+print(bp.crop.prlr)
 ```
 
 
@@ -320,11 +319,20 @@ pairs(lsmeans(m.cprlr, ~Stage))#females lower than males
 ```
 
 ```{r send to ppt, echo=FALSE}
+#Sends all boxplots to powerpoint
 read_pptx() %>% 
 add_slide(layout = "Title and Content", master = "Office Theme") %>% 
-ph_with_vg(code = print(all.genes), type="body", bg = "transparent") %>%
+ph_with_vg(code = print(bp.hyp.prl), type="body", bg = "transparent") %>%
   add_slide(layout = "Title and Content", master = "Office Theme") %>% 
-ph_with_vg(code = print(crp.prlr), type="body", bg = "transparent") %>%
+ph_with_vg(code = print(bp.hyp.prlr), type="body", bg = "transparent") %>%
+    add_slide(layout = "Title and Content", master = "Office Theme") %>% 
+ph_with_vg(code = print(bp.pit.prl), type="body", bg = "transparent") %>%
+    add_slide(layout = "Title and Content", master = "Office Theme") %>% 
+ph_with_vg(code = print(bp.pit.prlr), type="body", bg = "transparent") %>%
+    add_slide(layout = "Title and Content", master = "Office Theme") %>% 
+ph_with_vg(code = print(bp.crop.prl), type="body", bg = "transparent") %>%
+    add_slide(layout = "Title and Content", master = "Office Theme") %>% 
+ph_with_vg(code = print(bp.crop.prlr), type="body", bg = "transparent") %>%
 print(target = "~/Desktop/charts.pptx") %>% 
 invisible()
 
