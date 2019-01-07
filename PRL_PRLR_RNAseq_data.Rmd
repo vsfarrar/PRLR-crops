@@ -38,52 +38,50 @@ prl.long$log.exp<-log(prl.long$counts) #log transform counts data
 ```{r hyp plots}
 bp.hyp.prl<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prl") %>%
   ggplot(aes(y = log.exp, x = as.factor(timept)))+
-  geom_point(aes(colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
-  geom_boxplot(outlier.shape=NA, alpha=0.25)+
+  geom_point(aes(shape=sex, color=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_boxplot(outlier.shape=NA, alpha=0)+ #no outliers because points plotted by geom_points
   scale_color_manual(values=c("purple3","salmon1"))+
-    theme(axis.text=element_text(size=32),
-        axis.title=element_text(size=24,face="bold"),
-        plot.caption = element_text(size=16, hjust=0))+
   scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
-  scale_y_continuous(limits=c(3,7))+
+  scale_y_continuous(limits=c(3,7))+ #added so that both HYP graphs have same y axis
   labs(x=NULL,y="log(estimated counts)", title="Hypothalamus PRL")+
-  theme_classic()
+  theme_classic()+
+  theme(text = element_text(size=16),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle=45, hjust=1))
 print(bp.hyp.prl)
 
 bp.hyp.prlr<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prlr") %>%
   ggplot(aes(y = log.exp, x = as.factor(timept)))+
-  geom_point(aes(colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_point(aes(shape=sex, color=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
   scale_color_manual(values=c("purple3","salmon1"))+
-    theme(axis.text=element_text(size=22),
-        axis.title=element_text(size=24,face="bold"),
-        plot.caption = element_text(size=16, hjust=0),
-        legend.position="none")+
   scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
-  scale_y_continuous(limits=c(3,7))+
+  scale_y_continuous(limits=c(3,7))+ #added so that both HYP graphs have same y axis
   labs(x=NULL,y="log(estimated counts)", title="Hypothalamus PRLR")+
-  theme_classic()
+  theme_classic()+
+  theme(text = element_text(size=16),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle=45, hjust=1))
 print(bp.hyp.prlr)
 ```
 ```{r pit plots}
 #PIT PRL  
 bp.pit.prl<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl") %>%
   ggplot(aes(y = log.exp, x = as.factor(timept)))+
-  geom_point(aes(colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_point(aes(shape=sex, colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
   scale_color_manual(values=c("purple3","salmon1"))+
-    theme(axis.text=element_text(size=22),
-        axis.title=element_text(size=24,face="bold"),
-        plot.caption = element_text(size=10, hjust=0),
-        legend.position="none")+
   scale_y_continuous(limits=c(7,14))+
   scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
   labs(x=NULL,y="log(estimated counts)", title="Pit PRL")+
-  theme_classic()
+  theme_classic()+
+  theme(text = element_text(size=16),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle=45, hjust=1))
 
 bp.pit.prlr<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prlr") %>%
   ggplot(aes(y = log.exp, x = as.factor(timept)))+
-  geom_point(aes(colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_point(aes(shape=sex,colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
   scale_color_manual(values=c("purple3","salmon1"))+
     theme(axis.text=element_text(size=22),
@@ -91,8 +89,12 @@ bp.pit.prlr<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl
         plot.caption = element_text(size=10, hjust=0),
         legend.position="none")+
   scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  scale_y_continuous(limits=c(3,7))+ #same limits as HYP PRLR graph
   labs(x=NULL,y="log(estimated counts)", title="Pit PRLR")+
-  theme_classic()
+  theme_classic()+
+  theme(text = element_text(size=16),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle=45, hjust=1))
 
 print(bp.pit.prl)
 print(bp.pit.prlr)
@@ -152,7 +154,7 @@ crops.long$log.exp<-log((crops.long$ddCT)+13) #add 13 to make all values positiv
 ```{r crop plots}
 bp.crop.prl<- crops.long%>% filter(gene=="PRL_ddCT") %>%
   ggplot(aes(y = -(ddCT), x = as.factor(timept)))+
-  geom_point(aes(colour=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_point(aes(shape=Sex, colour=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
   scale_color_manual(values=c("purple3","salmon1"))+
     theme(axis.text=element_text(size=12),
@@ -161,11 +163,15 @@ bp.crop.prl<- crops.long%>% filter(gene=="PRL_ddCT") %>%
         legend.position="none")+
   scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
   labs(x=NULL,y="relative expression (ddCT)", title="Crop PRL")+
-  theme_classic()
+  scale_y_continuous(limits=c(-10,10))+ #same y axis between crop graphs
+  theme_classic()+
+  theme(text = element_text(size=16),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle=45, hjust=1))
 
 bp.crop.prlr<- crops.long%>% filter(gene=="PRLR_ddCT") %>%
   ggplot(aes(y = -(ddCT), x = as.factor(timept)))+
-  geom_point(aes(colour=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_point(aes(shape=Sex, colour=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
   scale_color_manual(values=c("purple3","salmon1"))+
     theme(axis.text=element_text(size=12),
@@ -174,7 +180,11 @@ bp.crop.prlr<- crops.long%>% filter(gene=="PRLR_ddCT") %>%
         legend.position="none")+
   scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
   labs(x=NULL,y="relative expression (ddCT)", title="Crop PRLR")+
-  theme_classic()
+  scale_y_continuous(limits=c(-10,10))+ #same y axis between crop graphs 
+  theme_classic()+
+  theme(text = element_text(size=16),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle=45, hjust=1))
 
 print(bp.crop.prl)
 print(bp.crop.prlr)
@@ -273,10 +283,11 @@ print(all.genes + theme(legend.position="bottom"))
 hprl<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prl" & focal=="y")
 m.hprl<- glm(log.exp~stage*sex, data=hprl, family="gaussian")
 anova(m.hprl, test="Chisq")
-#only an effect of stage on Hyp PRL
-summary(glm(log.exp~stage, data=hprl, family="gaussian")) 
+#only an effect of stage on Hyp PRL, no interaction or sex effect. 
+summary(glm(log.exp~stage, data=hprl, family="gaussian"))  #model with only stage
 #post hoc only for stage
 pairs(lsmeans(m.hprl, ~ stage)) #contrasts with "mvt" method and Bonferroni correction
+#yet...results reported as Tukey method
 
 #HYP PRLR
 hprlr<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prlr" & focal=="y")
@@ -284,7 +295,7 @@ m.hprlr<- glm(log.exp~stage*sex, data=hprlr, family="gaussian")
 anova(m.hprlr, test="Chisq")
 #significant effect of stage and sex, but NO interaction
 summary(glm(log.exp~stage+sex, data=hprlr, family="gaussian")) #only m.inc.d8 signif. 
-pairs(lsmeans(m.hprlr, ~ stage)) #females less than males
+pairs(lsmeans(m.hprlr, ~ stage)) #females less than males #Tukey method 
 pairs(lsmeans(m.hprlr, ~ sex)) #contrasts with "mvt" method and Bonferroni correction
 rbind((pairs(lsmeans(m.hprlr, ~ stage | sex))),(pairs(lsmeans(m.hprlr, ~ sex | stage))))
 ```
