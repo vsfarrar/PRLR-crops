@@ -41,10 +41,11 @@ bp.hyp.prl<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="p
   geom_point(aes(colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
   scale_color_manual(values=c("purple3","salmon1"))+
-    theme(axis.text=element_text(size=12),
-        axis.title=element_text(size=14,face="bold"),
-        plot.caption = element_text(size=10, hjust=0))+
+    theme(axis.text=element_text(size=32),
+        axis.title=element_text(size=24,face="bold"),
+        plot.caption = element_text(size=16, hjust=0))+
   scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  scale_y_continuous(limits=c(3,7))+
   labs(x=NULL,y="log(estimated counts)", title="Hypothalamus PRL")+
   theme_classic()
 print(bp.hyp.prl)
@@ -54,11 +55,12 @@ bp.hyp.prlr<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="
   geom_point(aes(colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
   scale_color_manual(values=c("purple3","salmon1"))+
-    theme(axis.text=element_text(size=12),
-        axis.title=element_text(size=14,face="bold"),
-        plot.caption = element_text(size=10, hjust=0),
+    theme(axis.text=element_text(size=22),
+        axis.title=element_text(size=24,face="bold"),
+        plot.caption = element_text(size=16, hjust=0),
         legend.position="none")+
   scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  scale_y_continuous(limits=c(3,7))+
   labs(x=NULL,y="log(estimated counts)", title="Hypothalamus PRLR")+
   theme_classic()
 print(bp.hyp.prlr)
@@ -70,8 +72,8 @@ bp.pit.prl<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl"
   geom_point(aes(colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
   scale_color_manual(values=c("purple3","salmon1"))+
-    theme(axis.text=element_text(size=12),
-        axis.title=element_text(size=14,face="bold"),
+    theme(axis.text=element_text(size=22),
+        axis.title=element_text(size=24,face="bold"),
         plot.caption = element_text(size=10, hjust=0),
         legend.position="none")+
   scale_y_continuous(limits=c(7,14))+
@@ -84,8 +86,8 @@ bp.pit.prlr<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl
   geom_point(aes(colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
   scale_color_manual(values=c("purple3","salmon1"))+
-    theme(axis.text=element_text(size=12),
-        axis.title=element_text(size=14,face="bold"),
+    theme(axis.text=element_text(size=22),
+        axis.title=element_text(size=24,face="bold"),
         plot.caption = element_text(size=10, hjust=0),
         legend.position="none")+
   scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
