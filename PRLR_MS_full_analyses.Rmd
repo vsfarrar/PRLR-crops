@@ -34,6 +34,16 @@ prl.long$focal<-ifelse(prl.long$stage %in% c("bldg", "inc.d3", "m.inc.d8", "inc.
 prl.long$log.exp<-log(prl.long$counts) #log transform counts data 
 ```
 
+###Crop sac qPCR data  
+Some notes on this dataset: 
+Genes-of-interest PRL and PRLR were run in *duplicate* for each crop sample, along with two reference genes, ACTB and rpL4. 
+Gene expression was normalized (dCT) by subtracting the geometric mean of the reference gene duplicates (ACTB and rpL4) from the average Ct of the duplicates for each gene-of-interest.  
+*The more positive the dCT, the lower the gene expression relative to reference genes (within a sample)*  
+*Can also think of it as "distance from reference gene"*  
+The second normalization (ddCT) involved subtracting the average normalized expression (dCT) of the control group (here, **building**) from each normalized sample for that gene. 
+*More positive numbers imply lower expression than average, more negative numbers imply higher expression than average.*  
+*For this reason, it is easier to interpret the -ddCT. Now, postive numbers on -ddCT imply higher expression than average control group, and negative numbers imply lower expression than average control group, as one would expect*  
+Lowest numbers have lowest relative expression, highest numbers have highest relative expression.  
 ```{r crop data import, message=FALSE, warning=FALSE, include=FALSE}
 crops<-read.csv(file="~/Documents/2018-04-16_PRLR_project_results.csv")
 myvars<-c("ID","Stage","Sex","PRL_ddCT", "PRLR_ddCT") #variables I want to keep from csv
@@ -44,7 +54,10 @@ crops.long$timept<-crops.long$Stage #create numerical "timept" variable for orde
 levels(crops.long$timept)<-c("1","2","3","4","5") #rename levels in bulk! saves lines of code.
 
 #log transform
-crops.long$log.exp<-log((crops.long$ddCT)+13) #add 13 to make all values positive, then log transform
+crops.long$negddCT<-(-(crops.long$ddCT))
+range(crops.long$negddCT, na.rm=TRUE) #returns the range of neg ddCT values. Lowest is -7.7. 
+#so, to get all values to be positive for log transformation, will add 8 to all and then log transform. 
+crops.long$log.exp.neg<-log((crops.long$negddCT)+8)
 ```
 
 #Hypothalamus 
@@ -286,11 +299,9 @@ hist(hist.cr$log.exp, breaks=seq(-5,5,0.1), main="Crop PRLR")
 ```
 ##Crop sac gene expression plots 
 
-**YOU NEED TO FIGURE OUT HOW TO ACCURATELY PLOT/represent the ddCT values intuitively** 
-
 ```{r crop plots, echo=FALSE, message=FALSE, warning=FALSE}
 bp.crop.prl<- crops.long%>% filter(gene=="PRL_ddCT") %>%
-  ggplot(aes(y = -(log.exp), x = as.factor(timept)))+
+  ggplot(aes(y = log.exp.neg, x = as.factor(timept)))+
   geom_point(aes(shape=Sex, colour=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
   scale_color_manual(values=c("purple3","salmon1"))+
@@ -300,14 +311,14 @@ bp.crop.prl<- crops.long%>% filter(gene=="PRL_ddCT") %>%
         legend.position="none")+
   scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
   labs(x=NULL,y="log(relative expression (ddCT))", title="Crop PRL")+
-  scale_y_continuous(limits=c(-5,5))+ #same y axis between crop graphs
+  scale_y_continuous(limits=c(-0.5,3))+ #same y axis between crop graphs
   theme_classic()+
   theme(text = element_text(size=16),
         plot.title = element_text(hjust = 0.5),
         axis.text.x = element_text(angle=45, hjust=1))
 
 bp.crop.prlr<- crops.long%>% filter(gene=="PRLR_ddCT") %>%
-  ggplot(aes(y = -(log.exp), x = as.factor(timept)))+
+  ggplot(aes(y = log.exp.neg, x = as.factor(timept)))+
   geom_point(aes(shape=Sex, colour=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
   scale_color_manual(values=c("purple3","salmon1"))+
@@ -317,7 +328,7 @@ bp.crop.prlr<- crops.long%>% filter(gene=="PRLR_ddCT") %>%
         legend.position="none")+
   scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
   labs(x=NULL,y="log (relative expression(ddCT))", title="Crop PRLR")+
-  scale_y_continuous(limits=c(-5,5))+ #same y axis between crop graphs 
+  scale_y_continuous(limits=c(-0.5,3))+ #same y axis between crop graphs 
   theme_classic()+
   theme(text = element_text(size=16),
         plot.title = element_text(hjust = 0.5),
