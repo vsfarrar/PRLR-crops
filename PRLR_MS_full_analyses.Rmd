@@ -1,0 +1,354 @@
+---
+title: "Prolactin and its receptor: H-P-C gene expression analyses"
+author: "Victoria"
+date: "1/9/2019"
+output: html_document
+---
+
+```{r data, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(officer)#creates Ppt slides
+library(rvg)#sends ggplot to ppt
+library(emmeans)
+
+prl<-read.csv(file="~/Documents/lab/PRL_PRLR_RNAseq_data.csv")
+
+prl.long<-prl %>% gather(key="bird",value = "counts",4:991, factor_key = TRUE) #wide to long
+prl.long$TranscriptID<-NULL #removes meaningless columns
+prl.long$Num<-NULL 
+prl.long<-separate(data = prl.long, col = bird, into = c("bird_id", "sex", "tissue","stage"), sep = "_") #splits bird details into separate columns by _ separator
+prl.long$counts<-as.numeric(prl.long$counts)
+prl.long$stage<-as.factor(prl.long$stage)
+prl.long$manip <- ifelse(grepl("m", prl.long$stage), "y", "n") #y = yes, manipulation ; n=no,not a manip, a characterization
+
+prl.long$stage <- factor(prl.long$stage, levels=c("control", "bldg", "lay", "inc.d3", "m.inc.d3","inc.d9", "m.inc.d8", "m.inc.d9", "inc.d17", "m.inc.d17", "hatch", "extend", "extend.hatch", "prolong", "inc.prolong", "m.hatch", "n5", "n9")) #manually re-orders stages.
+
+prl.long$timept<-prl.long$stage #create numerical "timept" variable for ordering stages
+levels(prl.long$timept)<-c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18") #rename levels in bulk! saves lines of code. 
+prl.long$timept<-as.numeric(prl.long$timept) #continuous, numerical variable for x axis
+
+#focal variable indicates time points I care about specifically 
+prl.long$focal<-prl.long$timept
+prl.long$focal<-ifelse(prl.long$stage %in% c("bldg", "inc.d3", "m.inc.d8", "inc.d9", "hatch"), "y", "n") #if the stage is in the list of accepted values, focal is yes, otherwise, no. 
+
+prl.long$log.exp<-log(prl.long$counts) #log transform counts data 
+```
+
+```{r crop data import, message=FALSE, warning=FALSE, include=FALSE}
+crops<-read.csv(file="~/Documents/2018-04-16_PRLR_project_results.csv")
+myvars<-c("ID","Stage","Sex","PRL_ddCT", "PRLR_ddCT") #variables I want to keep from csv
+crops<-crops[myvars] #subsets dataframe
+crops.long<-crops %>% gather(key="gene", value="ddCT", 4:5, factor_key=TRUE)#wide to long
+crops.long$Stage <- factor(crops.long$Stage, levels=c("Bldg", "Inc_D3", "Inc_D9","Manip_D8", "Hatch")) #manually re-orders stages.
+crops.long$timept<-crops.long$Stage #create numerical "timept" variable for ordering stages
+levels(crops.long$timept)<-c("1","2","3","4","5") #rename levels in bulk! saves lines of code.
+
+#log transform
+crops.long$log.exp<-log((crops.long$ddCT)+13) #add 13 to make all values positive, then log transform
+```
+
+#Hypothalamus 
+Transcriptomic data from RNAseq.   
+##Data distribution  
+*Note: "Focal data" refers to data from only the five stages we are interested in: bldg, inc d3, inc d9, m.inc d8, and hatch"*  
+Histograms of log transformed data show  
+HYP PRL: possible bimodal distribution,  
+HYP PRLR: relatively normal distributon  
+```{r hyp histograms, echo=FALSE, message=FALSE, warning=FALSE}
+#baseR way
+#subset data
+hist.hp <- prl.long[prl.long$geneid=="prl" & prl.long$tissue=="hypothalamus" & prl.long$focal=="y",] #PRL
+hist.hr <- prl.long[prl.long$geneid=="prlr" & prl.long$tissue=="hypothalamus" & prl.long$focal=="y",] #PRLR
+
+#plot histograms
+hist(hist.hp$log.exp, breaks=seq(3,7,0.1), main="Hyp. PRL (focal only)")
+hist(hist.hr$log.exp, breaks=seq(3,7,0.1), main="Hyp. PRLR (focal only)")
+```
+
+##Gene expression plots
+```{r hyp plots, echo=FALSE, message=FALSE, warning=FALSE}
+bp.hyp.prl<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prl") %>%
+  ggplot(aes(y = log.exp, x = as.factor(timept)))+
+  geom_point(aes(shape=sex, color=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_boxplot(outlier.shape=NA, alpha=0)+ #no outliers because points plotted by geom_points
+  scale_color_manual(values=c("purple3","salmon1"))+
+  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  scale_y_continuous(limits=c(3,7))+ #added so that both HYP graphs have same y axis
+  labs(x=NULL,y="log(estimated counts)", title="Hypothalamus PRL")+
+  theme_classic()+
+  theme(text = element_text(size=16),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle=45, hjust=1))
+print(bp.hyp.prl)
+
+bp.hyp.prlr<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prlr") %>%
+  ggplot(aes(y = log.exp, x = as.factor(timept)))+
+  geom_point(aes(shape=sex, color=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_boxplot(outlier.shape=NA, alpha=0.25)+
+  scale_color_manual(values=c("purple3","salmon1"))+
+  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  scale_y_continuous(limits=c(3,7))+ #added so that both HYP graphs have same y axis
+  labs(x=NULL,y="log(estimated counts)", title="Hypothalamus PRLR")+
+  theme_classic()+
+  theme(text = element_text(size=16),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle=45, hjust=1))
+print(bp.hyp.prlr)
+```
+###GLM: Hyp PRL  
+ANOVA indicates a significant effect of stage, but no effect of sex or any interaction.  
+According to p-values in glm, inc.d3 and hatch significantly differs from manipulation. (But manip does not significantly differ from hatch).  
+
+```{r lm hyp prl, echo=FALSE, message=FALSE, warning=FALSE}
+#HYP PRL
+hprl<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prl" & focal=="y")
+m.hp<- glm(log.exp~stage*sex, data=hprl, family="gaussian")
+anova(m.hp, test="Chisq") #tests the influence of each factor in the model
+
+##Stage influencial to data, but not sex or interaction. 
+summary(m.hp) #comparisons to female, building (default reference)
+
+#Changing references   (does this give the same results as lsmeans? check to be sure)
+hprl$stage <- relevel(hprl$stage, ref = "inc.d3") #inc.d3 now reference
+m1.hp <-glm(log.exp~stage*sex, data=hprl, family="gaussian")
+summary(m1.hp)
+
+hprl$stage <- relevel(hprl$stage, ref = "inc.d9") #inc.d9 now reference
+m2.hp <-glm(log.exp~stage*sex, data=hprl, family="gaussian")
+summary(m2.hp)
+
+hprl$stage <- relevel(hprl$stage, ref = "hatch") #hatch now reference
+m3.hp <-glm(log.exp~stage*sex, data=hprl, family="gaussian")
+summary(m3.hp)
+
+hprl$stage <- relevel(hprl$stage, ref = "m.inc.d8") #manip now reference
+m4.hp <-glm(log.exp~stage*sex, data=hprl, family="gaussian")
+summary(m4.hp)
+
+emm.hp<-emmeans(m.hp, ~stage)
+emm.hp2<-emmeans(m.hp, "stage")
+CLD(emm.hp) #gives letters (in numbers) for a graph later on. 
+
+```
+
+###GLM: Hyp PRLR
+"ANOVA" indicates that there is a significant effect of stage and sex on PRLR expression, but no interaction.  
+Manipulation day 8 is significantly higher than bldg, day 3, and day 9, but NOT significantly different from hatch.   
+All other stages not signficantly different from each other.  
+Significant sex difference, where males > females.   
+
+```{r lm hyp prlr, echo=FALSE, message=FALSE, warning=FALSE}
+#HYP PRLR
+hr<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prlr" & focal=="y")
+m1.hr<- glm(log.exp~stage*sex, data=hr, family="gaussian")
+anova(m1.hr, test="Chisq") 
+
+##Stage influencial to data, but not sex or interaction. 
+summary(m1.hr) #comparisons to female, building (default reference)
+
+#Changing references   (does this give the same results as lsmeans? check to be sure)
+hr$stage <- relevel(hr$stage, ref = "inc.d3") #inc.d3 now reference
+m2.hr <-glm(log.exp~stage*sex, data=hr, family="gaussian")
+summary(m2.hr)
+
+hr$stage <- relevel(hr$stage, ref = "inc.d9") #inc.d3 now reference
+m3.hr <-glm(log.exp~stage*sex, data=hr, family="gaussian")
+summary(m3.hr)
+
+hr$stage <- relevel(hr$stage, ref = "hatch") #hatch now reference
+m4.hr <-glm(log.exp~stage*sex, data=hr, family="gaussian")
+summary(m4.hr)
+
+```
+
+#Pituitary  
+Transcriptomic data from RNAseq.  
+##Data distribution  
+Histograms of log transformed data show  
+PIT PRL: possible bimodal distribution, w/ one large outlier,  
+PIT PRLR: relatively normal distributon  
+```{r hyp histograms, echo=FALSE, message=FALSE, warning=FALSE}
+#baseR way
+#subset data
+hist.pp <- prl.long[prl.long$geneid=="prl" & prl.long$tissue=="pituitary" & prl.long$focal=="y",] #PRL
+hist.pr <- prl.long[prl.long$geneid=="prlr" & prl.long$tissue=="pituitary" & prl.long$focal=="y",] #PRLR
+
+#plot histograms
+hist(hist.pp$log.exp, breaks=seq(1,14,0.1), main="Pit. PRL (focal only)")
+hist(hist.pr$log.exp, breaks=seq(1,14,0.1), main="Pit. PRLR (focal only)")
+```
+##Gene exp. plots
+```{r pit plots, echo=FALSE,message=FALSE, warning=FALSE}
+#PIT PRL  
+bp.pit.prl<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl") %>%
+  ggplot(aes(y = log.exp, x = as.factor(timept)))+
+  geom_point(aes(shape=sex, colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_boxplot(outlier.shape=NA, alpha=0.25)+
+  scale_color_manual(values=c("purple3","salmon1"))+
+  scale_y_continuous(limits=c(7,14))+
+  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  labs(x=NULL,y="log(estimated counts)", title="Pit PRL")+
+  theme_classic()+
+  theme(text = element_text(size=16),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle=45, hjust=1))
+
+bp.pit.prlr<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prlr") %>%
+  ggplot(aes(y = log.exp, x = as.factor(timept)))+
+  geom_point(aes(shape=sex,colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_boxplot(outlier.shape=NA, alpha=0.25)+
+  scale_color_manual(values=c("purple3","salmon1"))+
+    theme(axis.text=element_text(size=22),
+        axis.title=element_text(size=24,face="bold"),
+        plot.caption = element_text(size=10, hjust=0),
+        legend.position="none")+
+  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  scale_y_continuous(limits=c(3,7))+ #same limits as HYP PRLR graph
+  labs(x=NULL,y="log(estimated counts)", title="Pit PRLR")+
+  theme_classic()+
+  theme(text = element_text(size=16),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle=45, hjust=1))
+
+print(bp.pit.prl)
+print(bp.pit.prlr)
+```
+
+###GLM: Pit PRL
+"ANOVA" : significant effects of stage and sex, with no interaction.   
+Manipulation day 8 is significantly higher than bldg, day 3, and day 9, but NOT significantly different from hatch.   
+All other stages not signficantly different from each other.  
+Significant sex difference, where males < females.   
+
+```{r lm pit prl, echo=FALSE, message=FALSE, warning=FALSE}
+#PIT PRL
+pp<-prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & focal=="y")
+m1.pp<- glm(log.exp~stage*sex, data=pp, family="gaussian")
+anova(m1.pp, test="Chisq") 
+
+summary(m1.pp) #comparisons to female, building (default reference)
+
+#Changing references 
+pp$stage <- relevel(pp$stage, ref = "inc.d3") #inc.d3 now reference
+m2.pp <-glm(log.exp~stage*sex, data=pp, family="gaussian")
+summary(m2.pp)
+
+pp$stage <- relevel(pp$stage, ref = "inc.d9") #inc.d9 now reference
+m3.pp <-glm(log.exp~stage*sex, data=pp, family="gaussian")
+summary(m3.pp)
+
+pp$stage <- relevel(pp$stage, ref = "hatch") #inc.d3 now reference
+m4.pp <-glm(log.exp~stage*sex, data=pp, family="gaussian")
+summary(m4.pp)
+```
+
+###GLM: Pit PRLR
+"ANOVA" : significant effects of sex only 
+Manipulation day 8 is significantly different from hatch and building, but not incubation stages.   
+Significant sex difference, where males > females.   
+
+```{r lm pit prlr, echo=FALSE, message=FALSE, warning=FALSE}
+#PIT PRLR
+pr<-prl.long %>% filter(tissue=="pituitary" & geneid=="prlr" & focal=="y")
+m1.pr<- glm(log.exp~stage*sex, data=pr, family="gaussian")
+anova(m1.pr, test="Chisq") 
+
+summary(m1.pr) #comparisons to female, building (default reference)
+
+#Changing references 
+pr$stage <- relevel(pr$stage, ref = "inc.d3") #inc.d3 now reference
+m2.pr <-glm(log.exp~stage*sex, data=pr, family="gaussian")
+summary(m2.pr)
+
+pr$stage <- relevel(pr$stage, ref = "inc.d9") #inc.d9 now reference
+m3.pr <-glm(log.exp~stage*sex, data=pr, family="gaussian")
+summary(m3.pr)
+
+pr$stage <- relevel(pr$stage, ref = "hatch") #hatch now reference
+m4.pr <-glm(log.exp~stage*sex, data=pr, family="gaussian")
+summary(m4.pr)
+```
+
+#Crop sac
+
+##Data distribution  
+Histograms of log transformed data show  
+Crop PRL: *relatively* normal, with ~ 4 low outliers  
+Crop PRLR: relatively normal distributon  
+```{r crop histograms, echo=FALSE, message=FALSE, warning=FALSE}
+#subset data
+hist.cp <- crops.long[crops.long$gene=="PRL_ddCT",] #PRL
+hist.cr <- crops.long[crops.long$gene=="PRLR_ddCT",] #PRLR
+
+#plot histograms
+hist(hist.cp$log.exp, breaks=seq(-5,5,0.1), main="Crop PRL")
+hist(hist.cr$log.exp, breaks=seq(-5,5,0.1), main="Crop PRLR")
+```
+##Crop sac gene expression plots 
+
+**YOU NEED TO FIGURE OUT HOW TO ACCURATELY PLOT/represent the ddCT values intuitively** 
+
+```{r crop plots, echo=FALSE, message=FALSE, warning=FALSE}
+bp.crop.prl<- crops.long%>% filter(gene=="PRL_ddCT") %>%
+  ggplot(aes(y = -(log.exp), x = as.factor(timept)))+
+  geom_point(aes(shape=Sex, colour=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_boxplot(outlier.shape=NA, alpha=0.25)+
+  scale_color_manual(values=c("purple3","salmon1"))+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0),
+        legend.position="none")+
+  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  labs(x=NULL,y="log(relative expression (ddCT))", title="Crop PRL")+
+  scale_y_continuous(limits=c(-5,5))+ #same y axis between crop graphs
+  theme_classic()+
+  theme(text = element_text(size=16),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle=45, hjust=1))
+
+bp.crop.prlr<- crops.long%>% filter(gene=="PRLR_ddCT") %>%
+  ggplot(aes(y = -(log.exp), x = as.factor(timept)))+
+  geom_point(aes(shape=Sex, colour=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_boxplot(outlier.shape=NA, alpha=0.25)+
+  scale_color_manual(values=c("purple3","salmon1"))+
+    theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0),
+        legend.position="none")+
+  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  labs(x=NULL,y="log (relative expression(ddCT))", title="Crop PRLR")+
+  scale_y_continuous(limits=c(-5,5))+ #same y axis between crop graphs 
+  theme_classic()+
+  theme(text = element_text(size=16),
+        plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle=45, hjust=1))
+
+print(bp.crop.prl)
+print(bp.crop.prlr)
+```
+
+```{r line plots comparing expression levels, echo=FALSE, eval=FALSE}
+#how can you put these two graphs together?
+all.prl<-prl.long %>% filter(focal=="y") %>%
+  group_by(tissue,timept)%>%
+  summarize(avg_exp=mean(log.exp, na.rm = TRUE)) %>%
+  ggplot(aes(x=timept, y=avg_exp, color=tissue))+
+  geom_line(size=1, alpha=1)
+print(all.prl)
+
+
+prl.long<-mutate(prl.long,
+   tissxgene = paste(tissue, geneid,sep = ' ')) #creates the tissxgene value
+
+all.genes<-prl.long %>% filter(focal=="y" & tissue!= "gonad") %>%
+  group_by(tissxgene, timept)%>%
+  summarize(avg_exp=mean(log.exp, na.rm = TRUE)) %>%
+  ggplot(aes(x=timept, y=avg_exp, color=tissxgene, linetype=tissxgene))+
+  geom_line(size=1, alpha=1)+
+  scale_x_continuous(breaks=c(2,3,4,6,9,11), labels=c("bldg", "lay", "inc.d3", "m.inc.d8",  "inc.d17", "hatch"))+
+  scale_linetype_manual(values=c("longdash", "solid","longdash","solid"))+
+  scale_color_manual(values=c("turquoise2", "turquoise4","salmon1","salmon3"))+
+  labs(y="log(estimated counts)", x="parental care stage")+
+  theme_minimal()
+print(all.genes + theme(legend.position="bottom"))
+```
