@@ -138,9 +138,9 @@ hprl$stage <- relevel(hprl$stage, ref = "m.inc.d8") #manip now reference
 m4.hp <-glm(log.exp~stage*sex, data=hprl, family="gaussian")
 summary(m4.hp)
 
-emm.hp<-emmeans(m.hp, ~stage)
-emm.hp2<-emmeans(m.hp, "stage")
-CLD(emm.hp) #gives letters (in numbers) for a graph later on. 
+# emm.hp<-emmeans(m.hp, ~stage)
+# emm.hp2<-emmeans(m.hp, "stage")
+# CLD(emm.hp) #gives letters (in numbers) for a graph later on. 
 
 ```
 
@@ -180,7 +180,7 @@ Transcriptomic data from RNAseq.
 Histograms of log transformed data show  
 PIT PRL: possible bimodal distribution, w/ one large outlier,  
 PIT PRLR: relatively normal distributon  
-```{r hyp histograms, echo=FALSE, message=FALSE, warning=FALSE}
+```{r pit histograms, echo=FALSE, message=FALSE, warning=FALSE}
 #baseR way
 #subset data
 hist.pp <- prl.long[prl.long$geneid=="prl" & prl.long$tissue=="pituitary" & prl.long$focal=="y",] #PRL
