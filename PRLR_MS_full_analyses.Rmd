@@ -293,9 +293,13 @@ Crop PRLR: relatively normal distributon
 hist.cp <- crops.long[crops.long$gene=="PRL_ddCT",] #PRL
 hist.cr <- crops.long[crops.long$gene=="PRLR_ddCT",] #PRLR
 
-#plot histograms
-hist(hist.cp$log.exp, breaks=seq(-5,5,0.1), main="Crop PRL")
-hist(hist.cr$log.exp, breaks=seq(-5,5,0.1), main="Crop PRLR")
+#plot histograms (-ddCT)
+hist(hist.cp$negddCT, breaks=seq(-10,15,0.1), main="Crop PRL -ddCT") 
+hist(hist.cr$negddCT, breaks=seq(-10,15,0.1), main="Crop PRLR -ddCT") #relatively normal
+
+#histograms for log normalized data 
+hist(hist.cp$log.exp.neg, breaks=seq(-5,5,0.1), main="Crop PRL log(-ddCT + 8)") 
+hist(hist.cr$log.exp.neg, breaks=seq(-5,5,0.1), main="Crop PRLR log(-ddCT + 8)")
 ```
 ##Crop sac gene expression plots 
 
@@ -336,6 +340,60 @@ bp.crop.prlr<- crops.long%>% filter(gene=="PRLR_ddCT") %>%
 
 print(bp.crop.prl)
 print(bp.crop.prlr)
+```
+
+###GLM: Crop PRL  
+"ANOVA" : very weak trend towards an interaction, but not really anything else there. 
+Not really anything going on in downstream analyses... 
+Discuss mostly the fact that PRL gene expression was detectable in the crop.  
+```{r lm crop prl, echo=FALSE, message=FALSE, warning=FALSE}
+#Crop PRL
+cp<-crops.long %>% filter(gene=="PRL_ddCT")
+m1.cp<- glm(log.exp.neg~Stage*Sex, data=cp, family="gaussian")
+anova(m1.cp, test="Chisq") 
+
+summary(m1.cp) #comparisons to female, building (default reference)
+
+#Changing references 
+cp$Stage <- relevel(cp$Stage, ref = "Hatch") #Hatch now reference
+m2.cp <-glm(log.exp.neg~Stage*Sex, data=cp, family="gaussian")
+summary(m2.cp)
+
+cp$Stage <- relevel(cp$Stage, ref = "Inc_D3") #Inc_D3 now reference
+m3.cp <-glm(log.exp.neg~Stage*Sex, data=cp, family="gaussian")
+summary(m3.cp)
+
+cp$Stage <- relevel(cp$Stage, ref = "Manip_D8") #Manip D8 now reference
+m4.cp <-glm(log.exp.neg~Stage*Sex, data=cp, family="gaussian")
+summary(m4.cp)
+```
+###PRLR Crop
+"ANOVA" : weak trend towards stage
+Not really anything going on in downstream comparisons. 
+**Why then did we find something significant before?**  
+In previous analyses for SfN, I ran my models using -ddCT as a dependent variable, rather than log transformed -ddCT.   
+With log-transformed data, the effect disappeared.   
+```{r lm crop prlr, echo=FALSE, message=FALSE, warning=FALSE}
+#Crop PRLR
+cr<-crops.long %>% filter(gene=="PRLR_ddCT")
+m1.cr<- glm(log.exp.neg~Stage*Sex, data=cr, family="gaussian")
+anova(m1.cr, test="Chisq") 
+
+summary(m1.cr) #comparisons to female, building (default reference)
+
+#Changing references 
+cr$Stage <- relevel(cr$Stage, ref = "Hatch") #Hatch now reference
+m2.cr <-glm(log.exp.neg~Stage*Sex, data=cr, family="gaussian")
+summary(m2.cr)
+
+cr$Stage <- relevel(cr$Stage, ref = "Inc_D3") #Inc_D3 now reference
+m3.cr <-glm(log.exp.neg~Stage*Sex, data=cr, family="gaussian")
+summary(m3.cr)
+
+cr$Stage <- relevel(cr$Stage, ref = "Manip_D8") #Hatch now reference
+m4.cr <-glm(log.exp.neg~Stage*Sex, data=cr, family="gaussian")
+summary(m4.cr)
+
 ```
 
 ```{r line plots comparing expression levels, echo=FALSE, eval=FALSE}
