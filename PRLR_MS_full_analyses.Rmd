@@ -10,6 +10,7 @@ library(tidyverse)
 library(officer)#creates Ppt slides
 library(rvg)#sends ggplot to ppt
 library(emmeans)
+library(cowplot)
 
 prl<-read.csv(file="~/Documents/lab/PRL_PRLR_RNAseq_data.csv")
 
@@ -82,31 +83,52 @@ hist(hist.hr$log.exp, breaks=seq(3,7,0.1), main="Hyp. PRLR (focal only)")
 ```{r hyp plots, echo=FALSE, message=FALSE, warning=FALSE}
 bp.hyp.prl<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prl") %>%
   ggplot(aes(y = log.exp, x = as.factor(timept)))+
-  geom_point(aes(shape=sex, color=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
-  geom_boxplot(outlier.shape=NA, alpha=0)+ #no outliers because points plotted by geom_points
-  scale_color_manual(values=c("purple3","salmon1"))+
-  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  geom_point(aes(shape=sex, color=sex, fill=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  scale_shape_manual(values = c(21, 24))+ #shapes w/ color & fill, circle & triangle
+  scale_color_manual(values=c("black","black"))+ #shape border color
+  scale_fill_manual(values=c("gray50", "white"))+ #shape fill color
+geom_boxplot(outlier.shape=NA, alpha=0)+ #no outliers because points plotted by geom_points
+   scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
   scale_y_continuous(limits=c(3,7))+ #added so that both HYP graphs have same y axis
-  labs(x=NULL,y="log(estimated counts)", title="Hypothalamus PRL")+
+  labs(x=NULL,y="log(estimated counts)", title="PRL")+
   theme_classic()+
   theme(text = element_text(size=16),
-        plot.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.05, size = 14), #slightly shifted to right 
         axis.text.x = element_text(angle=45, hjust=1))
-print(bp.hyp.prl)
+#print(bp.hyp.prl)
 
 bp.hyp.prlr<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prlr") %>%
   ggplot(aes(y = log.exp, x = as.factor(timept)))+
-  geom_point(aes(shape=sex, color=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_point(aes(shape=sex, color=sex, fill=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  scale_shape_manual(values = c(21, 24))+ #shapes w/ color & fill, circle & triangle
+  scale_color_manual(values=c("black","black"))+ #shape border color
+  scale_fill_manual(values=c("gray50", "white"))+ #shape fill color
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
-  scale_color_manual(values=c("purple3","salmon1"))+
-  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
   scale_y_continuous(limits=c(3,7))+ #added so that both HYP graphs have same y axis
-  labs(x=NULL,y="log(estimated counts)", title="Hypothalamus PRLR")+
+  labs(x=NULL,y="log(estimated counts)", title="PRLR")+
   theme_classic()+
   theme(text = element_text(size=16),
-        plot.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.05,size=14),
         axis.text.x = element_text(angle=45, hjust=1))
 print(bp.hyp.prlr)
+```
+
+```{r hyp figures, echo=FALSE, message=FALSE, warning=FALSE}
+#only run once
+# paper-ready figures using cowplot
+hyp.legend <- get_legend(bp.hyp.prl) #extract legend (both have same legend)
+hyp.plots<-plot_grid(bp.hyp.prl + theme(legend.position="none"), #hides legedn on plot
+                     bp.hyp.prlr + theme(axis.title.y = element_blank(), legend.position="none"), #hides y axis on 2nd plot and legend 
+                     labels = c("A", "B"), #adds letters
+                     align = "h") #place graphs side by side, align axes
+
+hyp.plots <- plot_grid(hyp.plots, hyp.legend, rel_widths = c(3, .2))
+
+save_plot("~/Desktop/hyp.plots.pdf", hyp.plots, #saves above object as filename 
+          ncol = 3, #number of columns
+          nrow = 1, #number of rows
+          base_aspect_ratio = 1.1) #base aspect ratio of each individual plot
 ```
 ###GLM: Hyp PRL  
 ANOVA indicates a significant effect of stage, but no effect of sex or any interaction.  
@@ -195,11 +217,13 @@ hist(hist.pr$log.exp, breaks=seq(1,14,0.1), main="Pit. PRLR (focal only)")
 #PIT PRL  
 bp.pit.prl<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl") %>%
   ggplot(aes(y = log.exp, x = as.factor(timept)))+
-  geom_point(aes(shape=sex, colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_point(aes(shape=sex, color=sex, fill=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  scale_shape_manual(values = c(21, 24))+ #shapes w/ color & fill, circle & triangle
+  scale_color_manual(values=c("black","black"))+ #shape border color
+  scale_fill_manual(values=c("gray50", "white"))+ #shape fill color
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
-  scale_color_manual(values=c("purple3","salmon1"))+
   scale_y_continuous(limits=c(7,14))+
-  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
   labs(x=NULL,y="log(estimated counts)", title="Pit PRL")+
   theme_classic()+
   theme(text = element_text(size=16),
@@ -208,14 +232,16 @@ bp.pit.prl<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl"
 
 bp.pit.prlr<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prlr") %>%
   ggplot(aes(y = log.exp, x = as.factor(timept)))+
-  geom_point(aes(shape=sex,colour=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_point(aes(shape=sex, color=sex, fill=sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  scale_shape_manual(values = c(21, 24))+ #shapes w/ color & fill, circle & triangle
+  scale_color_manual(values=c("black","black"))+ #shape border color
+  scale_fill_manual(values=c("gray50", "white"))+ #shape fill color
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
-  scale_color_manual(values=c("purple3","salmon1"))+
     theme(axis.text=element_text(size=22),
         axis.title=element_text(size=24,face="bold"),
         plot.caption = element_text(size=10, hjust=0),
         legend.position="none")+
-  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
   scale_y_continuous(limits=c(3,7))+ #same limits as HYP PRLR graph
   labs(x=NULL,y="log(estimated counts)", title="Pit PRLR")+
   theme_classic()+
@@ -306,14 +332,16 @@ hist(hist.cr$log.exp.neg, breaks=seq(-5,5,0.1), main="Crop PRLR log(-ddCT + 8)")
 ```{r crop plots, echo=FALSE, message=FALSE, warning=FALSE}
 bp.crop.prl<- crops.long%>% filter(gene=="PRL_ddCT") %>%
   ggplot(aes(y = log.exp.neg, x = as.factor(timept)))+
-  geom_point(aes(shape=Sex, colour=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_point(aes(shape=Sex, colour=Sex, fill=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  scale_shape_manual(values = c(21, 24))+ #shapes w/ color & fill, circle & triangle
+  scale_color_manual(values=c("black","black"))+ #shape border color
+  scale_fill_manual(values=c("gray50", "white"))+ #shape fill color
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
-  scale_color_manual(values=c("purple3","salmon1"))+
     theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold"),
         plot.caption = element_text(size=10, hjust=0),
         legend.position="none")+
-  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+ scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
   labs(x=NULL,y="log(relative expression (ddCT))", title="Crop PRL")+
   scale_y_continuous(limits=c(-0.5,3))+ #same y axis between crop graphs
   theme_classic()+
@@ -323,14 +351,16 @@ bp.crop.prl<- crops.long%>% filter(gene=="PRL_ddCT") %>%
 
 bp.crop.prlr<- crops.long%>% filter(gene=="PRLR_ddCT") %>%
   ggplot(aes(y = log.exp.neg, x = as.factor(timept)))+
-  geom_point(aes(shape=Sex, colour=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  geom_point(aes(shape=Sex, colour=Sex, fill=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  scale_shape_manual(values = c(21, 24))+ #shapes w/ color & fill, circle & triangle
+  scale_color_manual(values=c("black","black"))+ #shape border color
+  scale_fill_manual(values=c("gray50", "white"))+ #shape fill color
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
-  scale_color_manual(values=c("purple3","salmon1"))+
     theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold"),
         plot.caption = element_text(size=10, hjust=0),
         legend.position="none")+
-  scale_x_discrete(labels=c("bldg", "inc.d3", "inc.d9", "m.inc.d8",  "hatch"))+
+  scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
   labs(x=NULL,y="log (relative expression(ddCT))", title="Crop PRLR")+
   scale_y_continuous(limits=c(-0.5,3))+ #same y axis between crop graphs 
   theme_classic()+
