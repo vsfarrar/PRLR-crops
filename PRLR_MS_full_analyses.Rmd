@@ -9,7 +9,7 @@ output: html_document
 library(tidyverse)
 library(officer)#creates Ppt slides
 library(rvg)#sends ggplot to ppt
-library(emmeans)
+library(emmeans) #post-hoc analyses
 library(cowplot)
 
 prl<-read.csv(file="~/Documents/lab/PRL_PRLR_RNAseq_data.csv")
@@ -137,33 +137,18 @@ According to p-values in glm, inc.d3 and hatch significantly differs from manipu
 ```{r lm hyp prl, echo=FALSE, message=FALSE, warning=FALSE}
 #HYP PRL
 hprl<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prl" & focal=="y")
-m.hp<- glm(log.exp~stage*sex, data=hprl, family="gaussian")
-anova(m.hp, test="Chisq") #tests the influence of each factor in the model
+m.hp.int<-glm(log.exp~stage*sex, data=hprl, family="gaussian")
+anova(m.hp.int, test="Chisq") #tests the influence of each factor in the model #likelihood ratio test
+#because interaction not significant for this, reporting results of model w/o interaction
+m.hp<- glm(log.exp~stage+sex, data=hprl, family="gaussian")
 
 ##Stage influencial to data, but not sex or interaction. 
 summary(m.hp) #comparisons to female, building (default reference)
 
-#Changing references   (does this give the same results as lsmeans? check to be sure)
-hprl$stage <- relevel(hprl$stage, ref = "inc.d3") #inc.d3 now reference
-m1.hp <-glm(log.exp~stage*sex, data=hprl, family="gaussian")
-summary(m1.hp)
-
-hprl$stage <- relevel(hprl$stage, ref = "inc.d9") #inc.d9 now reference
-m2.hp <-glm(log.exp~stage*sex, data=hprl, family="gaussian")
-summary(m2.hp)
-
-hprl$stage <- relevel(hprl$stage, ref = "hatch") #hatch now reference
-m3.hp <-glm(log.exp~stage*sex, data=hprl, family="gaussian")
-summary(m3.hp)
-
-hprl$stage <- relevel(hprl$stage, ref = "m.inc.d8") #manip now reference
-m4.hp <-glm(log.exp~stage*sex, data=hprl, family="gaussian")
-summary(m4.hp)
-
-# emm.hp<-emmeans(m.hp, ~stage)
-# emm.hp2<-emmeans(m.hp, "stage")
-# CLD(emm.hp) #gives letters (in numbers) for a graph later on. 
-
+#post-hoc comparisons
+emm.hp<-emmeans(m.hp, "stage") #run emmeans pairwise by stage
+pairs(emm.hp) #p-values with pairwise comparisons
+CLD(emm.hp) #gives letters (in numbers) for a graph later on. 
 ```
 
 ###GLM: Hyp PRLR
@@ -175,25 +160,21 @@ Significant sex difference, where males > females.
 ```{r lm hyp prlr, echo=FALSE, message=FALSE, warning=FALSE}
 #HYP PRLR
 hr<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prlr" & focal=="y")
-m1.hr<- glm(log.exp~stage*sex, data=hr, family="gaussian")
-anova(m1.hr, test="Chisq") 
+m.hr.int<- glm(log.exp~stage*sex, data=hr, family="gaussian")
+anova(m.hr.int, test="Chisq") 
+anova(m.hr, m.hr.int, test="Chisq") #likelihood ratio test
+#interaction not significant / important for model, run downstream tests on model w/o interaction
+m.hr<-glm(log.exp~stage+sex, data=hr, family="gaussian")
+summary(m.hr)
 
-##Stage influencial to data, but not sex or interaction. 
-summary(m1.hr) #comparisons to female, building (default reference)
+#post-hoc comparisons
+emm.hr<-emmeans(m.hr, "stage") #run emmeans pairwise by stage
+pairs(emm.hr) #p-values with pairwise comparisons
+CLD(emm.hr) #gives letters (in numbers) for a graph later on.
 
-#Changing references   (does this give the same results as lsmeans? check to be sure)
-hr$stage <- relevel(hr$stage, ref = "inc.d3") #inc.d3 now reference
-m2.hr <-glm(log.exp~stage*sex, data=hr, family="gaussian")
-summary(m2.hr)
+#this pattern is likely being driven by the outliers
 
-hr$stage <- relevel(hr$stage, ref = "inc.d9") #inc.d3 now reference
-m3.hr <-glm(log.exp~stage*sex, data=hr, family="gaussian")
-summary(m3.hr)
-
-hr$stage <- relevel(hr$stage, ref = "hatch") #hatch now reference
-m4.hr <-glm(log.exp~stage*sex, data=hr, family="gaussian")
-summary(m4.hr)
-
+plot(m.hr)
 ```
 
 #Pituitary  
@@ -224,10 +205,10 @@ bp.pit.prl<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl"
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
   scale_y_continuous(limits=c(7,14))+
   scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
-  labs(x=NULL,y="log(estimated counts)", title="Pit PRL")+
+  labs(x=NULL,y="log(estimated counts)", title="PRL")+
   theme_classic()+
   theme(text = element_text(size=16),
-        plot.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.05, size=14),
         axis.text.x = element_text(angle=45, hjust=1))
 
 bp.pit.prlr<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prlr") %>%
@@ -243,15 +224,32 @@ bp.pit.prlr<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl
         legend.position="none")+
   scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
   scale_y_continuous(limits=c(3,7))+ #same limits as HYP PRLR graph
-  labs(x=NULL,y="log(estimated counts)", title="Pit PRLR")+
+  labs(x=NULL,y="log(estimated counts)", title="PRLR")+
   theme_classic()+
   theme(text = element_text(size=16),
-        plot.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.05, size=14),
         axis.text.x = element_text(angle=45, hjust=1))
 
 print(bp.pit.prl)
 print(bp.pit.prlr)
 ```
+```{r pit figures, echo=FALSE, message=FALSE, warning=FALSE}
+#only run once
+# paper-ready figures using cowplot
+pit.legend <- get_legend(bp.pit.prl) #extract legend (both have same legend)
+pit.plots<-plot_grid(bp.pit.prl + theme(legend.position="none"), #hides legedn on plot
+                     bp.pit.prlr + theme(axis.title.y = element_blank(), legend.position="none"), #hides y axis on 2nd plot and legend 
+                     labels = c("A", "B"), #adds letters
+                     align = "h") #place graphs side by side, align axes
+
+hyp.plots <- plot_grid(pit.plots, pit.legend, rel_widths = c(3, .2))
+
+save_plot("~/Desktop/pit_plots.pdf", pit.plots, #saves above object as filename 
+          ncol = 3, #number of columns
+          nrow = 1, #number of rows
+          base_aspect_ratio = 1.1) #base aspect ratio of each individual plot
+```
+
 
 ###GLM: Pit PRL
 "ANOVA" : significant effects of stage and sex, with no interaction.   
@@ -262,24 +260,18 @@ Significant sex difference, where males < females.
 ```{r lm pit prl, echo=FALSE, message=FALSE, warning=FALSE}
 #PIT PRL
 pp<-prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & focal=="y")
-m1.pp<- glm(log.exp~stage*sex, data=pp, family="gaussian")
-anova(m1.pp, test="Chisq") 
+m.pp.int<- glm(log.exp~stage*sex, data=pp, family="gaussian")
+m.pp<- glm(log.exp~stage+sex, data=pp, family="gaussian")
+anova(m.pp.int, test="Chisq") 
+anova(m.pp.int, m.pp, test="Chisq") #weak trend towards affecting the interaction, but not present here. 
 
-summary(m1.pp) #comparisons to female, building (default reference)
-
-#Changing references 
-pp$stage <- relevel(pp$stage, ref = "inc.d3") #inc.d3 now reference
-m2.pp <-glm(log.exp~stage*sex, data=pp, family="gaussian")
-summary(m2.pp)
-
-pp$stage <- relevel(pp$stage, ref = "inc.d9") #inc.d9 now reference
-m3.pp <-glm(log.exp~stage*sex, data=pp, family="gaussian")
-summary(m3.pp)
-
-pp$stage <- relevel(pp$stage, ref = "hatch") #inc.d3 now reference
-m4.pp <-glm(log.exp~stage*sex, data=pp, family="gaussian")
-summary(m4.pp)
+#summary and post-hoc analyses on stage+sex model
+summary(m.pp)
+emm.pp<-emmeans(m.pp, ~stage)
+pairs(emm.pp)
+CLD(emm.pp)
 ```
+
 
 ###GLM: Pit PRLR
 "ANOVA" : significant effects of sex only 
@@ -289,23 +281,17 @@ Significant sex difference, where males > females.
 ```{r lm pit prlr, echo=FALSE, message=FALSE, warning=FALSE}
 #PIT PRLR
 pr<-prl.long %>% filter(tissue=="pituitary" & geneid=="prlr" & focal=="y")
-m1.pr<- glm(log.exp~stage*sex, data=pr, family="gaussian")
-anova(m1.pr, test="Chisq") 
+m.pr.int<- glm(log.exp~stage*sex, data=pr, family="gaussian")
+m.pr<-glm(log.exp~stage+sex, data=pr, family="gaussian")
+anova(m.pr.int, test="Chisq") 
+anova(m.pr, m.pr.int, test="Chisq")
+#interaction not significant
 
-summary(m1.pr) #comparisons to female, building (default reference)
-
-#Changing references 
-pr$stage <- relevel(pr$stage, ref = "inc.d3") #inc.d3 now reference
-m2.pr <-glm(log.exp~stage*sex, data=pr, family="gaussian")
-summary(m2.pr)
-
-pr$stage <- relevel(pr$stage, ref = "inc.d9") #inc.d9 now reference
-m3.pr <-glm(log.exp~stage*sex, data=pr, family="gaussian")
-summary(m3.pr)
-
-pr$stage <- relevel(pr$stage, ref = "hatch") #hatch now reference
-m4.pr <-glm(log.exp~stage*sex, data=pr, family="gaussian")
-summary(m4.pr)
+#summary and post-hoc with stage+sex model
+summary(m.pr)
+emm.pr<-emmeans(m.pr,"stage")
+pairs(emm.pr)
+CLD(emm.pr)
 ```
 
 #Crop sac
@@ -342,11 +328,11 @@ bp.crop.prl<- crops.long%>% filter(gene=="PRL_ddCT") %>%
         plot.caption = element_text(size=10, hjust=0),
         legend.position="none")+
  scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
-  labs(x=NULL,y="log(relative expression (ddCT))", title="Crop PRL")+
+  labs(x=NULL,y="log(relative expression (ddCT))", title="PRL")+
   scale_y_continuous(limits=c(-0.5,3))+ #same y axis between crop graphs
   theme_classic()+
   theme(text = element_text(size=16),
-        plot.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.05, size=14),
         axis.text.x = element_text(angle=45, hjust=1))
 
 bp.crop.prlr<- crops.long%>% filter(gene=="PRLR_ddCT") %>%
@@ -361,16 +347,34 @@ bp.crop.prlr<- crops.long%>% filter(gene=="PRLR_ddCT") %>%
         plot.caption = element_text(size=10, hjust=0),
         legend.position="none")+
   scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
-  labs(x=NULL,y="log (relative expression(ddCT))", title="Crop PRLR")+
+  labs(x=NULL,y="log (relative expression(ddCT))", title="PRLR")+
   scale_y_continuous(limits=c(-0.5,3))+ #same y axis between crop graphs 
   theme_classic()+
   theme(text = element_text(size=16),
-        plot.title = element_text(hjust = 0.5),
+        plot.title = element_text(hjust = 0.05, size=14),
         axis.text.x = element_text(angle=45, hjust=1))
 
 print(bp.crop.prl)
 print(bp.crop.prlr)
 ```
+
+```{r crop figures, echo=FALSE, message=FALSE, warning=FALSE}
+#only run once
+# paper-ready figures using cowplot
+crp.legend <- get_legend(bp.crop.prl) #extract legend (both have same legend)
+crp.plots<-plot_grid(bp.crop.prl + theme(legend.position="none"), #hides legedn on plot
+                     bp.crop.prlr + theme(axis.title.y = element_blank(), legend.position="none"), #hides y axis on 2nd plot and legend 
+                     labels = c("A", "B"), #adds letters
+                     align = "h") #place graphs side by side, align axes
+
+crp.plots <- plot_grid(crp.plots, crp.legend, rel_widths = c(3, .2))
+
+save_plot("~/Desktop/crop_plots.pdf", crp.plots, #saves above object as filename 
+          ncol = 3, #number of columns
+          nrow = 1, #number of rows
+          base_aspect_ratio = 1.1) #base aspect ratio of each individual plot
+```
+
 
 ###GLM: Crop PRL  
 "ANOVA" : very weak trend towards an interaction, but not really anything else there. 
@@ -379,23 +383,14 @@ Discuss mostly the fact that PRL gene expression was detectable in the crop.
 ```{r lm crop prl, echo=FALSE, message=FALSE, warning=FALSE}
 #Crop PRL
 cp<-crops.long %>% filter(gene=="PRL_ddCT")
-m1.cp<- glm(log.exp.neg~Stage*Sex, data=cp, family="gaussian")
-anova(m1.cp, test="Chisq") 
+m1.cp<- glm(log.exp.neg~Stage+Sex, data=cp, family="gaussian")
+
 
 summary(m1.cp) #comparisons to female, building (default reference)
 
-#Changing references 
-cp$Stage <- relevel(cp$Stage, ref = "Hatch") #Hatch now reference
-m2.cp <-glm(log.exp.neg~Stage*Sex, data=cp, family="gaussian")
-summary(m2.cp)
-
-cp$Stage <- relevel(cp$Stage, ref = "Inc_D3") #Inc_D3 now reference
-m3.cp <-glm(log.exp.neg~Stage*Sex, data=cp, family="gaussian")
-summary(m3.cp)
-
-cp$Stage <- relevel(cp$Stage, ref = "Manip_D8") #Manip D8 now reference
-m4.cp <-glm(log.exp.neg~Stage*Sex, data=cp, family="gaussian")
-summary(m4.cp)
+emm.cp<-emmeans(m1.cp, ~Stage)
+pairs(emm.cp)
+CLD(emm.cp)
 ```
 ###PRLR Crop
 "ANOVA" : weak trend towards stage
@@ -406,23 +401,14 @@ With log-transformed data, the effect disappeared.
 ```{r lm crop prlr, echo=FALSE, message=FALSE, warning=FALSE}
 #Crop PRLR
 cr<-crops.long %>% filter(gene=="PRLR_ddCT")
-m1.cr<- glm(log.exp.neg~Stage*Sex, data=cr, family="gaussian")
+m1.cr<- glm(log.exp.neg~Stage+Sex, data=cr, family="gaussian")
 anova(m1.cr, test="Chisq") 
 
 summary(m1.cr) #comparisons to female, building (default reference)
 
-#Changing references 
-cr$Stage <- relevel(cr$Stage, ref = "Hatch") #Hatch now reference
-m2.cr <-glm(log.exp.neg~Stage*Sex, data=cr, family="gaussian")
-summary(m2.cr)
-
-cr$Stage <- relevel(cr$Stage, ref = "Inc_D3") #Inc_D3 now reference
-m3.cr <-glm(log.exp.neg~Stage*Sex, data=cr, family="gaussian")
-summary(m3.cr)
-
-cr$Stage <- relevel(cr$Stage, ref = "Manip_D8") #Hatch now reference
-m4.cr <-glm(log.exp.neg~Stage*Sex, data=cr, family="gaussian")
-summary(m4.cr)
+emm.cr<-emmeans(m1.cr, ~Stage)
+pairs(emm.cr)
+CLD(emm.cr)
 
 ```
 
