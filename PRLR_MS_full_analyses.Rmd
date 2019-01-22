@@ -1,7 +1,7 @@
 ---
 title: "Prolactin and its receptor: H-P-C gene expression analyses"
 author: "Victoria"
-date: "1/9/2019"
+date: "updated 1/22/2019"
 output: html_document
 ---
 
@@ -63,6 +63,7 @@ crops.long$log.exp.neg<-log((crops.long$negddCT)+8)
 
 #Hypothalamus 
 Transcriptomic data from RNAseq.   
+
 ##Data distribution  
 *Note: "Focal data" refers to data from only the five stages we are interested in: bldg, inc d3, inc d9, m.inc d8, and hatch"*  
 Histograms of log transformed data show  
@@ -95,7 +96,7 @@ geom_boxplot(outlier.shape=NA, alpha=0)+ #no outliers because points plotted by 
   theme(text = element_text(size=16),
         plot.title = element_text(hjust = 0.05, size = 14), #slightly shifted to right 
         axis.text.x = element_text(angle=45, hjust=1))
-#print(bp.hyp.prl)
+print(bp.hyp.prl)
 
 bp.hyp.prlr<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prlr") %>%
   ggplot(aes(y = log.exp, x = as.factor(timept)))+
@@ -114,7 +115,7 @@ bp.hyp.prlr<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="
 print(bp.hyp.prlr)
 ```
 
-```{r hyp figures, eval=FALSE, message=FALSE, warning=FALSE}
+```{r hyp figures, eval=FALSE, message=FALSE, warning=FALSE,echo=FALSE}
 #only run once (eval set to false)
 # paper-ready figures using cowplot
 hyp.legend <- get_legend(bp.hyp.prl) #extract legend (both have same legend)
@@ -185,6 +186,7 @@ plot(m.hr)
 
 #Pituitary  
 Transcriptomic data from RNAseq.  
+
 ##Data distribution  
 Histograms of log transformed data show  
 PIT PRL: possible bimodal distribution, w/ one large outlier,  
@@ -239,7 +241,7 @@ bp.pit.prlr<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl
 print(bp.pit.prl)
 print(bp.pit.prlr)
 ```
-```{r pit figures, eval==FALSE, message=FALSE, warning=FALSE}
+```{r pit figures, eval=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
 #only run once (eval set to false)
 # paper-ready figures using cowplot
 pit.legend <- get_legend(bp.pit.prl) #extract legend (both have same legend)
@@ -327,6 +329,7 @@ hist(hist.cr$negddCT, breaks=seq(-10,15,0.1), main="Crop PRLR -ddCT") #relativel
 hist(hist.cp$log.exp.neg, breaks=seq(-5,5,0.1), main="Crop PRL log(-ddCT + 8)") 
 hist(hist.cr$log.exp.neg, breaks=seq(-5,5,0.1), main="Crop PRLR log(-ddCT + 8)")
 ```
+
 ##Crop sac gene expression plots 
 
 ```{r crop plots, echo=FALSE, message=FALSE, warning=FALSE}
@@ -372,7 +375,7 @@ print(bp.crop.prl)
 print(bp.crop.prlr)
 ```
 
-```{r crop figures, eval=FALSE, message=FALSE, warning=FALSE}
+```{r crop figures, eval=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
 #only run once (eval set to false)
 # paper-ready figures using cowplot
 crp.legend <- get_legend(bp.crop.prl) #extract legend (both have same legend)
@@ -411,6 +414,7 @@ summary(m1.cp) #comparisons to female, building (default reference)
 
 plot(m1.cp)
 ```
+
 ###PRLR Crop
 "ANOVA" : weak trend towards stage
 Not really anything going on in downstream comparisons. Trend towards hatch being significant (may be driving the weak trend towards an effect of stage)?  
