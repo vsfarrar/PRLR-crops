@@ -114,8 +114,8 @@ bp.hyp.prlr<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="
 print(bp.hyp.prlr)
 ```
 
-```{r hyp figures, echo=FALSE, message=FALSE, warning=FALSE}
-#only run once
+```{r hyp figures, eval=FALSE, message=FALSE, warning=FALSE}
+#only run once (eval set to false)
 # paper-ready figures using cowplot
 hyp.legend <- get_legend(bp.hyp.prl) #extract legend (both have same legend)
 hyp.plots<-plot_grid(bp.hyp.prl + theme(legend.position="none"), #hides legedn on plot
@@ -134,6 +134,8 @@ save_plot("~/Desktop/hyp.plots.pdf", hyp.plots, #saves above object as filename
 ANOVA indicates a significant effect of stage, but no effect of sex or any interaction.  
 According to p-values in glm, inc.d3 and hatch significantly differs from manipulation. (But manip does not significantly differ from hatch).  
 
+**Residual inspection**: Residual plots show some outliers with large Cook's distances and high influence.  Tails of Q-Q plot are not on the line.   
+(data points: #64, 79, 85)
 ```{r lm hyp prl, echo=FALSE, message=FALSE, warning=FALSE}
 #HYP PRL
 hprl<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prl" & focal=="y")
@@ -146,9 +148,11 @@ m.hp<- glm(log.exp~stage+sex, data=hprl, family="gaussian")
 summary(m.hp) #comparisons to female, building (default reference)
 
 #post-hoc comparisons
-emm.hp<-emmeans(m.hp, "stage") #run emmeans pairwise by stage
-pairs(emm.hp) #p-values with pairwise comparisons
-CLD(emm.hp) #gives letters (in numbers) for a graph later on. 
+# emm.hp<-emmeans(m.hp, "stage") #run emmeans pairwise by stage
+# pairs(emm.hp) #p-values with pairwise comparisons
+# CLD(emm.hp) #gives letters (in numbers) for a graph later on. 
+
+plot(m.hp)
 ```
 
 ###GLM: Hyp PRLR
@@ -157,20 +161,22 @@ Manipulation day 8 is significantly higher than bldg, day 3, and day 9, but NOT 
 All other stages not signficantly different from each other.  
 Significant sex difference, where males > females.   
 
+**Residual inspection**: Outliers with large Cook's distance and influence (datapoints: #2, #87, #90)  
+
 ```{r lm hyp prlr, echo=FALSE, message=FALSE, warning=FALSE}
 #HYP PRLR
 hr<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prlr" & focal=="y")
 m.hr.int<- glm(log.exp~stage*sex, data=hr, family="gaussian")
+m.hr<-glm(log.exp~stage+sex, data=hr, family="gaussian")
 anova(m.hr.int, test="Chisq") 
 anova(m.hr, m.hr.int, test="Chisq") #likelihood ratio test
 #interaction not significant / important for model, run downstream tests on model w/o interaction
-m.hr<-glm(log.exp~stage+sex, data=hr, family="gaussian")
 summary(m.hr)
 
 #post-hoc comparisons
-emm.hr<-emmeans(m.hr, "stage") #run emmeans pairwise by stage
-pairs(emm.hr) #p-values with pairwise comparisons
-CLD(emm.hr) #gives letters (in numbers) for a graph later on.
+# emm.hr<-emmeans(m.hr, "stage") #run emmeans pairwise by stage
+# pairs(emm.hr) #p-values with pairwise comparisons
+# CLD(emm.hr) #gives letters (in numbers) for a graph later on.
 
 #this pattern is likely being driven by the outliers
 
@@ -233,8 +239,8 @@ bp.pit.prlr<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl
 print(bp.pit.prl)
 print(bp.pit.prlr)
 ```
-```{r pit figures, echo=FALSE, message=FALSE, warning=FALSE}
-#only run once
+```{r pit figures, eval==FALSE, message=FALSE, warning=FALSE}
+#only run once (eval set to false)
 # paper-ready figures using cowplot
 pit.legend <- get_legend(bp.pit.prl) #extract legend (both have same legend)
 pit.plots<-plot_grid(bp.pit.prl + theme(legend.position="none"), #hides legedn on plot
@@ -257,6 +263,8 @@ Manipulation day 8 is significantly higher than bldg, day 3, and day 9, but NOT 
 All other stages not signficantly different from each other.  
 Significant sex difference, where males < females.   
 
+**Residual inspection**: Outliers with large Cook's distance and influence (datapoints: #8, #28, #78)  
+
 ```{r lm pit prl, echo=FALSE, message=FALSE, warning=FALSE}
 #PIT PRL
 pp<-prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & focal=="y")
@@ -266,10 +274,12 @@ anova(m.pp.int, test="Chisq")
 anova(m.pp.int, m.pp, test="Chisq") #weak trend towards affecting the interaction, but not present here. 
 
 #summary and post-hoc analyses on stage+sex model
-summary(m.pp)
-emm.pp<-emmeans(m.pp, ~stage)
-pairs(emm.pp)
-CLD(emm.pp)
+# summary(m.pp)
+# emm.pp<-emmeans(m.pp, ~stage)
+# pairs(emm.pp)
+# CLD(emm.pp)
+
+plot(m.pp)
 ```
 
 
@@ -277,6 +287,8 @@ CLD(emm.pp)
 "ANOVA" : significant effects of sex only 
 Manipulation day 8 is significantly different from hatch and building, but not incubation stages.   
 Significant sex difference, where males > females.   
+
+**Residual inspection**: Outliers with large Cook's distance and influence (datapoints: #5, #18, #45)  
 
 ```{r lm pit prlr, echo=FALSE, message=FALSE, warning=FALSE}
 #PIT PRLR
@@ -288,10 +300,12 @@ anova(m.pr, m.pr.int, test="Chisq")
 #interaction not significant
 
 #summary and post-hoc with stage+sex model
-summary(m.pr)
-emm.pr<-emmeans(m.pr,"stage")
-pairs(emm.pr)
-CLD(emm.pr)
+# summary(m.pr)
+# emm.pr<-emmeans(m.pr,"stage")
+# pairs(emm.pr)
+# CLD(emm.pr)
+
+plot(m.pr)
 ```
 
 #Crop sac
@@ -358,8 +372,8 @@ print(bp.crop.prl)
 print(bp.crop.prlr)
 ```
 
-```{r crop figures, echo=FALSE, message=FALSE, warning=FALSE}
-#only run once
+```{r crop figures, eval=FALSE, message=FALSE, warning=FALSE}
+#only run once (eval set to false)
 # paper-ready figures using cowplot
 crp.legend <- get_legend(bp.crop.prl) #extract legend (both have same legend)
 crp.plots<-plot_grid(bp.crop.prl + theme(legend.position="none"), #hides legedn on plot
@@ -380,6 +394,9 @@ save_plot("~/Desktop/crop_plots.pdf", crp.plots, #saves above object as filename
 "ANOVA" : very weak trend towards an interaction, but not really anything else there. 
 Not really anything going on in downstream analyses... 
 Discuss mostly the fact that PRL gene expression was detectable in the crop.  
+
+**Residual inspection**: Outliers with large Cook's distance and influence (datapoints: #29, #35, #85)  
+
 ```{r lm crop prl, echo=FALSE, message=FALSE, warning=FALSE}
 #Crop PRL
 cp<-crops.long %>% filter(gene=="PRL_ddCT")
@@ -388,16 +405,18 @@ m1.cp<- glm(log.exp.neg~Stage+Sex, data=cp, family="gaussian")
 
 summary(m1.cp) #comparisons to female, building (default reference)
 
-emm.cp<-emmeans(m1.cp, ~Stage)
-pairs(emm.cp)
-CLD(emm.cp)
+# emm.cp<-emmeans(m1.cp, ~Stage)
+# pairs(emm.cp)
+# CLD(emm.cp)
+
+plot(m1.cp)
 ```
 ###PRLR Crop
 "ANOVA" : weak trend towards stage
-Not really anything going on in downstream comparisons. 
-**Why then did we find something significant before?**  
-In previous analyses for SfN, I ran my models using -ddCT as a dependent variable, rather than log transformed -ddCT.   
-With log-transformed data, the effect disappeared.   
+Not really anything going on in downstream comparisons. Trend towards hatch being significant (may be driving the weak trend towards an effect of stage)?  
+
+**Residual inspection**: Outliers with large Cook's distance and influence (datapoints: #17, #62, #83), some bad outliers on this one!   
+
 ```{r lm crop prlr, echo=FALSE, message=FALSE, warning=FALSE}
 #Crop PRLR
 cr<-crops.long %>% filter(gene=="PRLR_ddCT")
@@ -406,10 +425,11 @@ anova(m1.cr, test="Chisq")
 
 summary(m1.cr) #comparisons to female, building (default reference)
 
-emm.cr<-emmeans(m1.cr, ~Stage)
-pairs(emm.cr)
-CLD(emm.cr)
+# emm.cr<-emmeans(m1.cr, ~Stage)
+# pairs(emm.cr)
+# CLD(emm.cr)
 
+plot(m1.cr)
 ```
 
 ```{r line plots comparing expression levels, echo=FALSE, eval=FALSE}
