@@ -156,6 +156,14 @@ summary(m.hp) #comparisons to female, building (default reference)
 plot(m.hp)
 ```
 
+```{r lmRob hyp prl, echo=FALSE}
+library(robust)
+hp.rob<-lmRob(log.exp~stage+sex, data=hprl)
+anova.lmRob(hp.rob) #significant effect of stage, none of sex
+summary(hp.rob) #sig. effect of inc.d8, weak trend towards hatch
+
+```
+
 ###GLM: Hyp PRLR
 "ANOVA" indicates that there is a significant effect of stage and sex on PRLR expression, but no interaction.  
 Manipulation day 8 is significantly higher than bldg, day 3, and day 9, but NOT significantly different from hatch.   
@@ -182,6 +190,12 @@ summary(m.hr)
 #this pattern is likely being driven by the outliers
 
 plot(m.hr)
+```
+
+```{r lmRob hyp prlr, echo=FALSE}
+hr.rob<-lmRob(log.exp~stage+sex, data=hr)
+anova.lmRob(hr.rob) #significant effect of stage and of sex
+summary(hr.rob)
 ```
 
 #Pituitary  
@@ -284,6 +298,11 @@ anova(m.pp.int, m.pp, test="Chisq") #weak trend towards affecting the interactio
 plot(m.pp)
 ```
 
+```{lmRob pit prl, echo=FALSE}
+pp.rob<-lmRob(log.exp~stage+sex, data=pp)
+anova.lmRob(pp.rob) #significant effect of stage and of sex
+summary(pp.rob)
+```
 
 ###GLM: Pit PRLR
 "ANOVA" : significant effects of sex only 
