@@ -11,6 +11,7 @@ library(officer)#creates Ppt slides
 library(rvg)#sends ggplot to ppt
 library(emmeans) #post-hoc analyses
 library(cowplot)
+library(robust) #robust regression (lmRob)
 
 prl<-read.csv(file="~/Documents/lab/PRL_PRLR_RNAseq_data.csv")
 
@@ -298,7 +299,7 @@ anova(m.pp.int, m.pp, test="Chisq") #weak trend towards affecting the interactio
 plot(m.pp)
 ```
 
-```{lmRob pit prl, echo=FALSE}
+```{r lmRob pit prl, echo=FALSE}
 pp.rob<-lmRob(log.exp~stage+sex, data=pp)
 anova.lmRob(pp.rob) #significant effect of stage and of sex
 summary(pp.rob)
@@ -327,6 +328,11 @@ anova(m.pr, m.pr.int, test="Chisq")
 # CLD(emm.pr)
 
 plot(m.pr)
+```
+```{r lmRob pit prlr, echo=FALSE}
+pr.rob<-lmRob(log.exp~stage+sex, data=pr)
+anova.lmRob(pr.rob) 
+summary(pr.rob)
 ```
 
 #Crop sac
@@ -434,6 +440,12 @@ summary(m1.cp) #comparisons to female, building (default reference)
 plot(m1.cp)
 ```
 
+```{r lmRob crop prl, echo=FALSE}
+cp.rob<-lmRob(log.exp.neg~Stage+Sex, data=cp)
+anova.lmRob(cp.rob) #significant effect of stage and of sex
+summary(cp.rob)
+```
+
 ###PRLR Crop
 "ANOVA" : weak trend towards stage
 Not really anything going on in downstream comparisons. Trend towards hatch being significant (may be driving the weak trend towards an effect of stage)?  
@@ -453,6 +465,12 @@ summary(m1.cr) #comparisons to female, building (default reference)
 # CLD(emm.cr)
 
 plot(m1.cr)
+```
+
+```{r lmRob crop prlr, echo=FALSE}
+cr.rob<-lmRob(log.exp.neg~Stage+Sex, data=cr)
+anova.lmRob(cr.rob) #significant effect of stage ONLY, driven by hatch
+summary(cr.rob)
 ```
 
 ```{r line plots comparing expression levels, echo=FALSE, eval=FALSE}
