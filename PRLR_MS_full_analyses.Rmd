@@ -142,6 +142,7 @@ According to p-values in glm, inc.d3 and hatch significantly differs from manipu
 #HYP PRL
 hprl<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prl" & focal=="y")
 m.hp.int<-glm(log.exp~stage*sex, data=hprl, family="gaussian")
+anova(m.hp.int, test="F")#F test that gives similar results to likelihood ratio test, but now comparable to the robust F test from lmRob 
 anova(m.hp.int, test="Chisq") #tests the influence of each factor in the model #likelihood ratio test
 #because interaction not significant for this, reporting results of model w/o interaction
 m.hp<- glm(log.exp~stage+sex, data=hprl, family="gaussian")
@@ -178,6 +179,7 @@ Significant sex difference, where males > females.
 hr<-prl.long %>% filter(tissue=="hypothalamus" & geneid=="prlr" & focal=="y")
 m.hr.int<- glm(log.exp~stage*sex, data=hr, family="gaussian")
 m.hr<-glm(log.exp~stage+sex, data=hr, family="gaussian")
+anova(m.hr.int, test="F") 
 anova(m.hr.int, test="Chisq") 
 anova(m.hr, m.hr.int, test="Chisq") #likelihood ratio test
 #interaction not significant / important for model, run downstream tests on model w/o interaction
@@ -287,6 +289,7 @@ Significant sex difference, where males < females.
 pp<-prl.long %>% filter(tissue=="pituitary" & geneid=="prl" & focal=="y")
 m.pp.int<- glm(log.exp~stage*sex, data=pp, family="gaussian")
 m.pp<- glm(log.exp~stage+sex, data=pp, family="gaussian")
+anova(m.pp.int, test="F") 
 anova(m.pp.int, test="Chisq") 
 anova(m.pp.int, m.pp, test="Chisq") #weak trend towards affecting the interaction, but not present here. 
 
@@ -317,6 +320,7 @@ Significant sex difference, where males > females.
 pr<-prl.long %>% filter(tissue=="pituitary" & geneid=="prlr" & focal=="y")
 m.pr.int<- glm(log.exp~stage*sex, data=pr, family="gaussian")
 m.pr<-glm(log.exp~stage+sex, data=pr, family="gaussian")
+anova(m.pr.int, test="F") 
 anova(m.pr.int, test="Chisq") 
 anova(m.pr, m.pr.int, test="Chisq")
 #interaction not significant
@@ -429,7 +433,7 @@ Discuss mostly the fact that PRL gene expression was detectable in the crop.
 #Crop PRL
 cp<-crops.long %>% filter(gene=="PRL_ddCT")
 m1.cp<- glm(log.exp.neg~Stage+Sex, data=cp, family="gaussian")
-
+anova(m1.cp, test="F")
 
 summary(m1.cp) #comparisons to female, building (default reference)
 
@@ -457,7 +461,7 @@ Not really anything going on in downstream comparisons. Trend towards hatch bein
 cr<-crops.long %>% filter(gene=="PRLR_ddCT")
 m1.cr<- glm(log.exp.neg~Stage+Sex, data=cr, family="gaussian")
 anova(m1.cr, test="Chisq") 
-
+anova(m1.cr, test="F") 
 summary(m1.cr) #comparisons to female, building (default reference)
 
 # emm.cr<-emmeans(m1.cr, ~Stage)
