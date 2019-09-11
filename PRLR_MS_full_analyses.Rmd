@@ -47,10 +47,10 @@ The second normalization (ddCT) involved subtracting the average normalized expr
 *For this reason, it is easier to interpret the -ddCT. Now, postive numbers on -ddCT imply higher expression than average control group, and negative numbers imply lower expression than average control group, as one would expect*  
 Lowest numbers have lowest relative expression, highest numbers have highest relative expression.  
 ```{r crop data import, message=FALSE, warning=FALSE, include=FALSE}
-crops<-read.csv(file="~/Desktop/data/2018-04-16_PRLR_project_results.csv")
-myvars<-c("ID","Stage","Sex","PRL_ddCT", "PRLR_ddCT") #variables I want to keep from csv
+crops<-read.csv(file="~/Desktop/data/2019-09-11_PRLR_project_results.csv")
+myvars<-c("ID","ID_correct","Stage","Sex","PRL_ddCT", "PRLR_ddCT") #variables I want to keep from csv
 crops<-crops[myvars] #subsets dataframe
-crops.long<-crops %>% gather(key="gene", value="ddCT", 4:5, factor_key=TRUE)#wide to long
+crops.long<-crops %>% gather(key="gene", value="ddCT", 5:6, factor_key=TRUE)#wide to long
 crops.long$Stage <- factor(crops.long$Stage, levels=c("Bldg", "Inc_D3", "Inc_D9","Manip_D8", "Hatch")) #manually re-orders stages.
 crops.long$timept<-crops.long$Stage #create numerical "timept" variable for ordering stages
 levels(crops.long$timept)<-c("1","2","3","4","5") #rename levels in bulk! saves lines of code.
@@ -513,3 +513,4 @@ all.genes<-prl.long %>% filter(focal=="y" & tissue!= "gonad") %>%
   theme_minimal()
 print(all.genes + theme(legend.position="bottom"))
 ```
+
