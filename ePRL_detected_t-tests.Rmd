@@ -1,0 +1,106 @@
+---
+title: "Did we actually detect prolactin in the crop?"
+date: "2/5/2019"
+output: html_document
+---
+**Logic**: To determine if we actually detected PRL extra-pituitarily in the crop sac, 
+I conducted t-tests comparing raw Ct values (from the qPCR output) between replicates of samples (from all sexes and timepoints) and the no-template controls (H2O with no cDNA). These two measures *should* come from different populations, as one contains cDNA, and one does not, so the t-test should be significant.  
+
+###Prolactin receptor
+From the boxplot and the significant t-test, we can see that the samples in the crop are significantly different from the no-template controls.  
+
+```{r PRLR, echo=FALSE}
+dat<-read.csv(file="~/Downloads/PRLR_raw_Ct_values.csv", header=TRUE)
+tapply(dat$PRLR, dat$group, mean, na.rm=TRUE)
+boxplot(PRLR~group,data=dat, main="Prolactin receptor raw Ct", 
+        xlab="group", ylab="raw Ct value")
+t.test(dat$PRLR~dat$group) #t-test significant for PRLR - success
+```
+###Prolactin 
+The t-test is not significant, which means that the samples and the no-template control may be from the same population. In fact, the NTC samples had a LOWER median Ct (HIGHER expression) than samples... worrying! 
+
+```{r PRL, echo=FALSE}
+tapply(dat$PRL, dat$group, mean, na.rm=TRUE)
+boxplot(PRL~group,data=dat, main="Prolactin raw Ct", 
+        xlab="group", ylab="raw Ct value")
+t.test(dat$PRL~dat$group) #t-test not significant for PRL
+```
+
+###Reference gene: ACTB
+As a sanity check, I looked to see if a reference gene passed this test. It did, success!
+
+```{r ACTB, echo=FALSE}
+tapply(dat$ACTB, dat$group, mean, na.rm=TRUE)
+boxplot(ACTB~group,data=dat, main="ACTB raw Ct", 
+        xlab="group", ylab="raw Ct value")
+t.test(dat$ACTB~dat$group) 
+```
+
+```{r nondetects df, echo=FALSE}
+#create a dataframe of H2O/NTC values only
+ntc <- dat[dat$group =="NTC",]
+
+#for PRLR
+avg.prlr<-mean(ntc$PRLR) #define average H2O value in PRLR gene
+X2a<-sum(dat$PRLR > avg.prlr, na.rm=TRUE) #Ct values greater than NTC
+X2b<-sum(dat$PRLR == 40, na.rm=TRUE) #Ct values equal to 40
+X2c<-sum(is.na(dat$PRLR)) #Ct values entered as NA in spreadsheet (likely 40)
+X2d<-length(dat$PRLR) #total number of observations
+
+#again for PRL
+avg.prl<-mean(ntc$PRL)
+X3a<-sum(dat$PRL > avg.prl, na.rm=TRUE)
+X3b<-sum(dat$PRL == 40)
+X3c<-sum(is.na(dat$PRL))
+X3d<-length(dat$PRLR)
+
+#create a dataframe (nondetects) of both genes together
+nondetects<-data.frame(matrix(ncol = 4, nrow = 4))
+nondetects$X1<-c("higher than NTC", "40", "entered as NA", "total")
+nondetects$X2<-c(X2a,X2b,X2c,X2d)
+nondetects$X3<-c(X3a,X3b,X3c,X3d)
+colnames(nondetects)<-c("category","PRLR","PRL")
+
+#note that this dataframe does not control for sample id between duplicates. Some samples may have had both duplicates be non-detects. 
+```
+
+open questions: 
+-How do non-detects vary between samples (how many samples have both duplicate runs as non-detects)?
+-Are non-detect samples randomly distributed between time points and stages? 
+ - How hard would it be to implement the EM algorithim from "On non-detects in qPCR paper"? 
+ Not too hard... luckily Expectation-Maximization algorithms have been used before and r packages exist.   
+ 
+###Does stage, sex, or gene predict missing values?
+A generalized mixed model (glmer) controlling for duplicates across bird ID shows that there is no significant effect of stage or sex on missing values for ANY gene (when all genes are considered pooling), which is good news.   
+However, the PRL gene was strongly significant at predicting missing values - indicating that missing values are not at random when it comes to this gene.
+
+```{r glmer to test missingness}
+library(dplyr)
+library(tidyr)
+all.dat<-read.csv(file="~/Documents/lab/prolactin receptor crops (Brandon)/raw_Ct_stages_sex.csv", header=TRUE)
+dat.long<-all.dat%>% gather(key="gene", value="Ct", 4:8, factor_key=TRUE)#wide to long
+
+dat.long$missing40<-0 #missing based on cycle value of 40 (less conservative)
+dat.long$missing40[dat.long$Ct==40]<-1
+
+#code below does not work
+dat.long$missntc<-0
+dat.long$missntc[(dat$gene=="PRLR") && (dat.long$Ct>36.51)]<-1
+dat.long$missntc[(dat$gene=="PRL") && (dat.long$Ct>38.24)]<-1
+
+library(lme4)
+library(lmerTest)
+m1<-glmer(missing40~gene+stage+sex +(1|id), data=dat.long, family=poisson)
+summary(m1)
+
+#run above for subset of just PRLR, just PRL
+```
+
+But within PRL specifically, the missing values (at least at the less conservative Ct=40 level) appear to be random or not explained by stage or sex.  
+```{r prl glmer}
+library(dplyr)
+library(tidyr)
+dat.prl<-dat.long %>% filter(gene=="PRL")
+m2<-glmer(missing40~stage+sex +(1|id), data=dat.prl, family=poisson)
+summary(m2) #but wit
+```
