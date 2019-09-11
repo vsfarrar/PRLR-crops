@@ -1,7 +1,7 @@
 ---
 title: "Prolactin and its receptor: H-P-C gene expression analyses"
 author: "Victoria"
-date: "updated 1/22/2019"
+date: "updated 9/11/2019"
 output: html_document
 ---
 
@@ -13,7 +13,7 @@ library(emmeans) #post-hoc analyses
 library(cowplot)
 library(robust) #robust regression (lmRob)
 
-prl<-read.csv(file="~/Documents/lab/PRL_PRLR_RNAseq_data.csv")
+prl<-read.csv(file="~/Desktop/data/PRL_PRLR_RNAseq_data.csv")
 
 prl.long<-prl %>% gather(key="bird",value = "counts",4:991, factor_key = TRUE) #wide to long
 prl.long$TranscriptID<-NULL #removes meaningless columns
@@ -47,7 +47,7 @@ The second normalization (ddCT) involved subtracting the average normalized expr
 *For this reason, it is easier to interpret the -ddCT. Now, postive numbers on -ddCT imply higher expression than average control group, and negative numbers imply lower expression than average control group, as one would expect*  
 Lowest numbers have lowest relative expression, highest numbers have highest relative expression.  
 ```{r crop data import, message=FALSE, warning=FALSE, include=FALSE}
-crops<-read.csv(file="~/Documents/2018-04-16_PRLR_project_results.csv")
+crops<-read.csv(file="~/Desktop/data/2018-04-16_PRLR_project_results.csv")
 myvars<-c("ID","Stage","Sex","PRL_ddCT", "PRLR_ddCT") #variables I want to keep from csv
 crops<-crops[myvars] #subsets dataframe
 crops.long<-crops %>% gather(key="gene", value="ddCT", 4:5, factor_key=TRUE)#wide to long
@@ -60,6 +60,17 @@ crops.long$negddCT<-(-(crops.long$ddCT))
 range(crops.long$negddCT, na.rm=TRUE) #returns the range of neg ddCT values. Lowest is -7.7. 
 #so, to get all values to be positive for log transformation, will add 8 to all and then log transform. 
 crops.long$log.exp.neg<-log((crops.long$negddCT)+8)
+
+#fold change for qPCR analysis
+crops.long$foldchange<-2^(crops.long$negddCT)#fold change is 2^-(ddCt)
+crops.long$log.foldchange<-log(crops.long$foldchange)
+range(crops.long$foldchange, na.rm=TRUE)
+
+#fold change distribution
+hist.cr <- crops.long[crops.long$gene=="PRLR_ddCT",] #PRLR
+hist(hist.cr$foldchange, main="Crop PRLR Fold Change")
+hist(hist.cr$log.foldchange, main="Crop PRLR LOG Fold Change") #log fold change nice n normal now.
+
 ```
 
 #Hypothalamus 
@@ -363,7 +374,7 @@ hist(hist.cr$log.exp.neg, breaks=seq(-5,5,0.1), main="Crop PRLR log(-ddCT + 8)")
 
 ```{r crop plots, echo=FALSE, message=FALSE, warning=FALSE}
 bp.crop.prl<- crops.long%>% filter(gene=="PRL_ddCT") %>%
-  ggplot(aes(y = log.exp.neg, x = as.factor(timept)))+
+  ggplot(aes(y = log.foldchange, x = as.factor(timept)))+
   geom_point(aes(shape=Sex, colour=Sex, fill=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
   scale_shape_manual(values = c(21, 24))+ #shapes w/ color & fill, circle & triangle
   scale_color_manual(values=c("black","black"))+ #shape border color
@@ -374,7 +385,7 @@ bp.crop.prl<- crops.long%>% filter(gene=="PRL_ddCT") %>%
         plot.caption = element_text(size=10, hjust=0),
         legend.position="none")+
  scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
-  labs(x=NULL,y="log(relative expression (ddCT))", title="PRL")+
+  labs(x=NULL,y="log(fold change)", title="PRL")+
   scale_y_continuous(limits=c(-0.5,3))+ #same y axis between crop graphs
   theme_classic()+
   theme(text = element_text(size=16),
@@ -382,7 +393,7 @@ bp.crop.prl<- crops.long%>% filter(gene=="PRL_ddCT") %>%
         axis.text.x = element_text(angle=45, hjust=1))
 
 bp.crop.prlr<- crops.long%>% filter(gene=="PRLR_ddCT") %>%
-  ggplot(aes(y = log.exp.neg, x = as.factor(timept)))+
+  ggplot(aes(y = log.foldchange, x = as.factor(timept)))+
   geom_point(aes(shape=Sex, colour=Sex, fill=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
   scale_shape_manual(values = c(21, 24))+ #shapes w/ color & fill, circle & triangle
   scale_color_manual(values=c("black","black"))+ #shape border color
@@ -393,7 +404,7 @@ bp.crop.prlr<- crops.long%>% filter(gene=="PRLR_ddCT") %>%
         plot.caption = element_text(size=10, hjust=0),
         legend.position="none")+
   scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
-  labs(x=NULL,y="log (relative expression(ddCT))", title="PRLR")+
+  labs(x=NULL,y="log (fold change)", title="PRLR")+
   scale_y_continuous(limits=c(-0.5,3))+ #same y axis between crop graphs 
   theme_classic()+
   theme(text = element_text(size=16),
