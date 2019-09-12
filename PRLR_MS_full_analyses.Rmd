@@ -514,7 +514,123 @@ all.genes<-prl.long %>% filter(focal=="y" & tissue!= "gonad") %>%
 print(all.genes + theme(legend.position="bottom"))
 ```
 
-```{r plasma prolactin correlation, echo=FALSE, message= FALSE}
+```{r data prep for correlations, echo=FALSE, message = FALSE}
+library(stringr)# for string manipulation 
+
+#create a clean_id variable for band combinations in prl.long RNAseq dataset
+prl.long$clean_id<-str_replace_all(prl.long$bird_id, "x", "") #remove meaningless "x" from band combos
+prl.long$clean_id<-str_replace_all(prl.long$clean_id, "[[:punct:]]", "") #remove punctuation
+
+#import plasma prolactin dataset
+plasma<-read.csv("~/Desktop/data/prolactin_ria_data.csv") 
+
+#create clean_id variable in that dataset 
+plasma$clean_id<-str_replace_all(plasma$ColorBands, "x", "")
+plasma$clean_id<-str_replace_all(plasma$clean_id,"[[:punct:]]", "" )
+
+#join prolactin plasma data with prl.long RNAseq data
+prl.join<-left_join(prl.long, plasma, by ="clean_id")
+
+#table that returns the counts of entries that now have prolactin plasma data, sorted by stage and sex
+#sample size is ok
+prl.join %>%
+  filter(focal=="y")%>%
+  group_by(stage,sex)%>%
+  drop_na(Prolactin.ng.mL) %>%
+  summarise(n= n_distinct(Prolactin.ng.mL))
+```
+```{r proof of concept: prolactin vs pitPRL, echo = FALSE, message = FALSE}
+#beginning with pit PRL versus plasma prolactin, as a proof of principle
+#should be highly correlated 
+
+#create a datasubset (pit, prl, join)
+p.p.j<-prl.join%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl")
+
+#plot correlation
+#(scatterplot for hyp, prl, joined data) = sp.h.pr.j
+sp.p.p.j<- p.p.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage))+
+           geom_point()+
+          geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
+              aes(group=1),colour="black") + 
+          labs(x="Plasma prolactin concentration (ng/mL)", 
+               y="Pituitary PRL expression (log(counts))")+
+          ggtitle("Plasma prolactin predicts pituitary PRL expression", subtitle = "Proof of principle") + 
+          annotate("text", x = 75, y = 3, label = "R2= 0.64, p<< 0.01")
+sp.p.p.j
+
+#correlation linear model 
+corr.p.p<- lm(log.exp~Prolactin.ng.mL, p.p.j) #use lm as it gives R2 
+summary(corr.p.p)  #incredibly significant! 
+#SUCCESS!
+```
+
+```{r prolactin vs hyp PRLR, echo = FALSE, message = FALSE}
+#create a datasubset (hyp, prlr, join)
+h.pr.j<-prl.join%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prlr")
+
+#plot correlation
+#(scatterplot for hyp, prlr, joined data) = sp.h.pr.j
+sp.h.pr.j<- h.pr.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage))+
+           geom_point()+
+          geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
+              aes(group=1),colour="black") + 
+          labs(x="Plasma prolactin concentration (ng/mL)", 
+               y="Hypothalamic PRLR expression (log(counts))")+
+          ggtitle("Prolactin vs Hyp PRLR") + 
+          annotate("text", x = 75, y = 3, label = "R2=0.001, n.s.")
+sp.h.pr.j
+
+#correlation linear model 
+corr.h.pr<- lm(log.exp~Prolactin.ng.mL, h.pr.j) #use lm as it gives R2 
+summary(corr.h.pr)  #n.s.
+```
+```{r prolactin vs hyp PRL, echo = FALSE, message = FALSE}
+#correlate plasma prolactin versus hyp ePRL exprssion 
+
+#create a datasubset (hyp, prl, join)
+h.p.j<-prl.join%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prl")
+
+#plot correlation
+#(scatterplot for hyp, prl, joined data) = sp.h.pr.j
+sp.h.p.j<- h.p.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage))+
+           geom_point()+
+          geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
+              aes(group=1),colour="black") + 
+          labs(x="Plasma prolactin concentration (ng/mL)", 
+               y="Hypothalamic PRL expression (log(counts))")+
+          ggtitle("Plasma prolactin predicts hypothalamic ePRL expression") + 
+          annotate("text", x = 75, y = 3, label = "R2=0.072, p = 0.02")
+sp.h.p.j
+
+#correlation linear model 
+corr.h.p<- lm(log.exp~Prolactin.ng.mL, h.p.j) #use lm as it gives R2 
+summary(corr.h.p)  #significant positive correlation (p=0.02)
+```
+```{r prolactin vs pit PRLR, echo = FALSE, message = FALSE}
+#correlate plasma prolactin versus pit PRLR exprssion 
+
+#create a datasubset (hyp, prl, join)
+p.pr.j<-prl.join%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prlr")
+
+#plot correlation
+#(scatterplot for hyp, prl, joined data) = sp.h.pr.j
+sp.p.pr.j<- p.pr.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage))+
+           geom_point()+
+          geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
+              aes(group=1),colour="black") + 
+          labs(x="Plasma prolactin concentration (ng/mL)", 
+               y="Pit PRLR expression (log(counts))")+
+          ggtitle("Prolactin vs Pit PRLR") + 
+          annotate("text", x = 75, y = 3, label = "n.s.")
+sp.p.pr.j
+
+#correlation linear model 
+corr.p.pr<- lm(log.exp~Prolactin.ng.mL, p.pr.j) #use lm as it gives R2 
+summary(corr.p.pr)  #n.s. 
+```
+
+
+```{r crop prolactin correlations, echo=FALSE, message= FALSE}
 #import prolactin data (created from a previous join, contains Fred's PRL plasma data)
 prolactin<-read.csv("~/Desktop/data/2019-09-11_prolactin_plasma_sample_join.csv")
 #join qPCR data and prolactin plasma data 
@@ -536,4 +652,11 @@ crop_vs_prolactin
 join_PRLR<-join%>% filter(gene=="PRLR_ddCT") #subset joined data
 prolactin_corr<- glm(log.foldchange~prolactin_conc, join_PRLR, family="gaussian")
 summary(prolactin_corr) 
+```
+```{r correlation figures, eval=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
+#only run once (eval set to false)
+save_plot("~/Desktop/prolactin_corr.pdf", crop_vs_prolactin, #saves above object as filename 
+          ncol = 1, #number of columns
+          nrow = 1, #number of rows
+          base_aspect_ratio = 1.1) #base aspect ratio of each individual plot
 ```
