@@ -521,11 +521,12 @@ prolactin<-read.csv("~/Desktop/data/2019-09-11_prolactin_plasma_sample_join.csv"
 join<-left_join(crops.long,prolactin)
 
 #scatterplot with linear model graph
+join$Stage<-as.factor(join$Stage)
 crop_vs_prolactin<- join%>% filter(gene=="PRLR_ddCT") %>%
-  ggplot(aes(y = log.foldchange, x = prolactin_conc))+
+  ggplot(aes(y = log.foldchange, x = prolactin_conc, color=Stage))+
   geom_point()+
-  stat_smooth(method = "lm", 
-              formula = y ~ x) +
+  geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
+               aes(group=1),colour="black") + 
   labs(x="Plasma prolactin concentration(ng/mL)", y="Crop PRLR expression (log(fold change))")+
   annotate("text", x = 75, y = -4, label = "p=0.006")+
   ggtitle("Plasma prolactin significantly predicts crop PRLR expression")
