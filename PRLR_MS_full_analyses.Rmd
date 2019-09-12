@@ -514,3 +514,25 @@ all.genes<-prl.long %>% filter(focal=="y" & tissue!= "gonad") %>%
 print(all.genes + theme(legend.position="bottom"))
 ```
 
+```{r plasma prolactin correlation, echo=FALSE, message= FALSE}
+#import prolactin data (created from a previous join, contains Fred's PRL plasma data)
+prolactin<-read.csv("~/Desktop/data/2019-09-11_prolactin_plasma_sample_join.csv")
+#join qPCR data and prolactin plasma data 
+join<-left_join(crops.long,prolactin)
+
+#scatterplot with linear model graph
+crop_vs_prolactin<- join%>% filter(gene=="PRLR_ddCT") %>%
+  ggplot(aes(y = log.foldchange, x = prolactin_conc))+
+  geom_point()+
+  stat_smooth(method = "lm", 
+              formula = y ~ x) +
+  labs(x="Plasma prolactin concentration(ng/mL)", y="Crop PRLR expression (log(fold change))")+
+  annotate("text", x = 75, y = -4, label = "p=0.006")+
+  ggtitle("Plasma prolactin significantly predicts crop PRLR expression")
+crop_vs_prolactin
+
+#prolactin correlation with linear model 
+join_PRLR<-join%>% filter(gene=="PRLR_ddCT") #subset joined data
+prolactin_corr<- glm(log.foldchange~prolactin_conc, join_PRLR, family="gaussian")
+summary(prolactin_corr) 
+```
