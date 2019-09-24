@@ -513,6 +513,7 @@ all.genes<-prl.long %>% filter(focal=="y" & tissue!= "gonad") %>%
   theme_minimal()
 print(all.genes + theme(legend.position="bottom"))
 ```
+###Plasma prolactin correlations
 
 ```{r data prep for correlations, echo=FALSE, message = FALSE}
 library(stringr)# for string manipulation 
@@ -539,6 +540,64 @@ prl.join %>%
   drop_na(Prolactin.ng.mL) %>%
   summarise(n= n_distinct(Prolactin.ng.mL))
 ```
+```{r}
+#does plasma prolactin vary with stage in this dataset?
+
+#bulk rename 
+library(forcats)
+plasma <- plasma %>%
+    mutate(Treatment = fct_recode(Treatment,
+                            "bldg" = "Bldg",
+                            "inc_d17" = "Inc_d17",
+                            "inc_d3" = "Inc_d3",
+                            "inc_d9" = "Inc_d9",
+                            "hatch" = "Hatch",
+                            "M_inc8" = "M_Inc8"))
+#note focal timepoints in prolactin dataset
+plasma$focal<-ifelse(plasma$Treatment %in% c("bldg", "inc_d3", "M_inc8", "inc_d9", "hatch"), "y", "n") #if the stage is in the list of accepted values, focal is yes, otherwise, no. 
+
+#manually re-order stages
+plasma.focal$Treatment<- factor(plasma.focal$Treatment, levels=c("bldg", "inc_d3","inc_d9",  "M_inc8", "hatch")) 
+
+#subset data
+plasma.focal<-plasma %>% filter(focal=="y")
+
+#linear model for sex and stage with plasma prolactin data
+m.plasma<-glm(Prolactin.ng.mL~Treatment + Sex, plasma.focal, family="gaussian")
+summary(m.plasma)
+hist(m.plasma$residuals) #normal residuals :) 
+
+#results from re-levels: 
+#bldg sig from all but m_inc8
+#inc_d3 sig from bldg and hatch
+#inc_d9 sig from bldg and hatch
+#m_inc8 sig from hatch only
+#hatch sig from ALL.
+
+
+#plot for plasma prolactin data 
+bp.plasma<- plasma.focal %>%
+  ggplot(aes(y = Prolactin.ng.mL, x = as.factor(Treatment)))+
+  geom_point(aes(shape=Sex, colour=Sex, fill=Sex), position=position_jitter(width=0.1, height=0.1), size=3, alpha=1)+
+  scale_shape_manual(values = c(21, 24))+ #shapes w/ color & fill, circle & triangle
+  scale_color_manual(values=c("black","black"))+ #shape border color
+  scale_fill_manual(values=c("gray50", "white"))+ #shape fill color
+  geom_boxplot(outlier.shape=NA, alpha=0.25) +
+   theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"),
+        plot.caption = element_text(size=10, hjust=0),
+        legend.position="none")+
+ scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
+  labs(x=NULL,y="Plasma concentration (ng/mL)", title="Plasma prolactin levels")+
+  scale_y_continuous(limits=c(0,100))+ #same y axis between crop graphs
+  theme_classic()+
+  theme(text = element_text(size=16),
+        plot.title = element_text(hjust = 0.05, size=14),
+        axis.text.x = element_text(angle=45, hjust=1))
+
+bp.plasma
+```
+
 ```{r proof of concept: prolactin vs pitPRL, echo = FALSE, message = FALSE}
 #beginning with pit PRL versus plasma prolactin, as a proof of principle
 #should be highly correlated 
@@ -653,10 +712,4 @@ join_PRLR<-join%>% filter(gene=="PRLR_ddCT") #subset joined data
 prolactin_corr<- glm(log.foldchange~prolactin_conc, join_PRLR, family="gaussian")
 summary(prolactin_corr) 
 ```
-```{r correlation figures, eval=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
-#only run once (eval set to false)
-save_plot("~/Desktop/prolactin_corr.pdf", crop_vs_prolactin, #saves above object as filename 
-          ncol = 1, #number of columns
-          nrow = 1, #number of rows
-          base_aspect_ratio = 1.1) #base aspect ratio of each individual plot
-```
+
