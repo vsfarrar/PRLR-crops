@@ -1,7 +1,7 @@
 ---
 title: "Prolactin and its receptor: H-P-C gene expression analyses"
 author: "Victoria"
-date: "updated 9/11/2019"
+date: "updated 9/29/2019"
 output: html_document
 ---
 
@@ -12,7 +12,6 @@ library(rvg)#sends ggplot to ppt
 library(emmeans) #post-hoc analyses
 library(cowplot)
 library(robust) #robust regression (lmRob)
-library(ggpubr) #ggplot significance indications 
 
 prl<-read.csv(file="~/Desktop/data/PRL_PRLR_RNAseq_data.csv")
 
@@ -104,11 +103,17 @@ bp.hyp.prl<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="p
 geom_boxplot(outlier.shape=NA, alpha=0)+ #no outliers because points plotted by geom_points
    scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
   scale_y_continuous(limits=c(3,7))+ #added so that both HYP graphs have same y axis
-  labs(x=NULL,y="log(estimated counts)", title="PRL")+
+  labs(x=NULL,y="log(estimated counts)", title="ePRL")+
+  annotate("text", #manually adds a,ab,b groupings
+           x = c(1, 2, 3, 4,5),
+           y = c(7,7,6.5, 6.5,7),
+           label = c("a", "a", "ab","b","a"),
+           family = "", fontface=2, size=4)+
   theme_classic()+
   theme(text = element_text(size=16),
         plot.title = element_text(hjust = 0.05, size = 14), #slightly shifted to right 
         axis.text.x = element_text(angle=45, hjust=1))
+
 print(bp.hyp.prl)
 
 bp.hyp.prlr<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prlr") %>%
@@ -119,13 +124,19 @@ bp.hyp.prlr<- prl.long%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="
   scale_fill_manual(values=c("gray50", "white"))+ #shape fill color
   geom_boxplot(outlier.shape=NA, alpha=0.25)+
   scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
-  scale_y_continuous(limits=c(3,7))+ #added so that both HYP graphs have same y axis
+  scale_y_continuous(limits=c(3,6))+ #added so that both HYP graphs have same y axis
   labs(x=NULL,y="log(estimated counts)", title="PRLR")+
+ annotate("text", #manually adds a,ab,b groupings
+           x = c(1, 2, 3, 4,5),
+           y = 6,
+           label = c("a", "ab", "b","b","b"),
+           family = "", fontface=2, size=4)+
   theme_classic()+
   theme(text = element_text(size=16),
         plot.title = element_text(hjust = 0.05,size=14),
         axis.text.x = element_text(angle=45, hjust=1))
 print(bp.hyp.prlr)
+
 ```
 
 ```{r hyp figures, eval=FALSE, message=FALSE, warning=FALSE,echo=FALSE}
@@ -243,6 +254,11 @@ bp.pit.prl<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl"
   scale_y_continuous(limits=c(7,14))+
   scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
   labs(x=NULL,y="log(estimated counts)", title="PRL")+
+    annotate("text", #manually adds a,ab,b groupings
+           x = c(1, 2, 3, 4,5),
+           y = c(12,12.5,12.5,12.5,14),
+           label = c("a", "ab", "b","b","c"),
+           family = "", fontface=2, size=4)+
   theme_classic()+
   theme(text = element_text(size=16),
         plot.title = element_text(hjust = 0.05, size=14),
@@ -260,7 +276,12 @@ bp.pit.prlr<- prl.long%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl
         plot.caption = element_text(size=10, hjust=0),
         legend.position="none")+
   scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
-  scale_y_continuous(limits=c(3,7))+ #same limits as HYP PRLR graph
+  scale_y_continuous(limits=c(3,6))+ #same limits as HYP PRLR graph
+  annotate("text", #manually adds a,ab,b groupings
+           x = c(1, 2, 3, 4,5),
+           y = 6,
+           label = c("ab", "a", "a","b","a"),
+           family = "", fontface=2, size=4)+
   labs(x=NULL,y="log(estimated counts)", title="PRLR")+
   theme_classic()+
   theme(text = element_text(size=16),
@@ -386,6 +407,11 @@ bp.crop.prl<- crops.long%>% filter(gene=="PRL_ddCT") %>%
         plot.caption = element_text(size=10, hjust=0),
         legend.position="none")+
  scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
+annotate("text", #manually adds a,ab,b groupings
+           x = c(1, 2, 3, 4,5),
+           y = 3,
+           label = "a",
+           family = "", fontface=2, size=4)+
   labs(x=NULL,y="log(fold change)", title="PRL")+
   scale_y_continuous(limits=c(-0.5,3))+ #same y axis between crop graphs
   theme_classic()+
@@ -405,8 +431,13 @@ bp.crop.prlr<- crops.long%>% filter(gene=="PRLR_ddCT") %>%
         plot.caption = element_text(size=10, hjust=0),
         legend.position="none")+
   scale_x_discrete(labels=c("building", "inc.d3", "inc.d9", "manip.d8",  "hatch"))+
+    annotate("text", #manually adds a,ab,b groupings
+           x = c(1, 2, 3, 4,5),
+           y = c(3,3,3,3,3.5),
+           label = c("a", "a", "a","a","b"),
+           family = "", fontface=2, size=4)+
   labs(x=NULL,y="log (fold change)", title="PRLR")+
-  scale_y_continuous(limits=c(-0.5,3))+ #same y axis between crop graphs 
+  scale_y_continuous(limits=c(-0.5,3.5))+ #same y axis between crop graphs 
   theme_classic()+
   theme(text = element_text(size=16),
         plot.title = element_text(hjust = 0.05, size=14),
@@ -608,8 +639,8 @@ p.p.j<-prl.join%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl")
 
 #plot correlation
 #(scatterplot for hyp, prl, joined data) = sp.h.pr.j
-sp.p.p.j<- p.p.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage))+
-           geom_point()+
+sp.p.p.j<- p.p.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, shape=stage))+
+           geom_point(size = 3)+
           geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
               aes(group=1),colour="black") + 
           labs(x="Plasma prolactin concentration (ng/mL)", 
@@ -630,8 +661,8 @@ h.pr.j<-prl.join%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prlr")
 
 #plot correlation
 #(scatterplot for hyp, prlr, joined data) = sp.h.pr.j
-sp.h.pr.j<- h.pr.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage))+
-           geom_point()+
+sp.h.pr.j<- h.pr.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage, shape=stage))+
+           geom_point(size=3)+
           geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
               aes(group=1),colour="black") + 
           labs(x="Plasma prolactin concentration (ng/mL)", 
@@ -644,6 +675,7 @@ sp.h.pr.j
 corr.h.pr<- lm(log.exp~Prolactin.ng.mL, h.pr.j) #use lm as it gives R2 
 summary(corr.h.pr)  #n.s.
 ```
+
 ```{r prolactin vs hyp PRL, echo = FALSE, message = FALSE}
 #correlate plasma prolactin versus hyp ePRL exprssion 
 
@@ -652,8 +684,8 @@ h.p.j<-prl.join%>% filter(focal=="y" & tissue=="hypothalamus" & geneid=="prl")
 
 #plot correlation
 #(scatterplot for hyp, prl, joined data) = sp.h.pr.j
-sp.h.p.j<- h.p.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage))+
-           geom_point()+
+sp.h.p.j<- h.p.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage, shape=stage))+
+           geom_point(size=3)+
           geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
               aes(group=1),colour="black") + 
           labs(x="Plasma prolactin concentration (ng/mL)", 
@@ -674,14 +706,14 @@ p.pr.j<-prl.join%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prlr")
 
 #plot correlation
 #(scatterplot for hyp, prl, joined data) = sp.h.pr.j
-sp.p.pr.j<- p.pr.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage))+
-           geom_point()+
+sp.p.pr.j<- p.pr.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage, shape=stage))+
+           geom_point(size=3)+
           geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
               aes(group=1),colour="black") + 
           labs(x="Plasma prolactin concentration (ng/mL)", 
                y="Pit PRLR expression (log(counts))")+
           ggtitle("Prolactin vs Pit PRLR") + 
-          annotate("text", x = 75, y = 3, label = "n.s.")
+          annotate("text", x = 75, y = 3, label = "n.s.", size=5)
 sp.p.pr.j
 
 #correlation linear model 
