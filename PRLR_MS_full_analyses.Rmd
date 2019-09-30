@@ -12,6 +12,7 @@ library(rvg)#sends ggplot to ppt
 library(emmeans) #post-hoc analyses
 library(cowplot)
 library(robust) #robust regression (lmRob)
+library(ggpubr) #ggplot significance indications 
 
 prl<-read.csv(file="~/Desktop/data/PRL_PRLR_RNAseq_data.csv")
 
@@ -540,7 +541,7 @@ prl.join %>%
   drop_na(Prolactin.ng.mL) %>%
   summarise(n= n_distinct(Prolactin.ng.mL))
 ```
-```{r}
+```{r plasma prolactin by stage, echo=FALSE, message=FALSE}
 #does plasma prolactin vary with stage in this dataset?
 
 #bulk rename 
@@ -553,14 +554,14 @@ plasma <- plasma %>%
                             "inc_d9" = "Inc_d9",
                             "hatch" = "Hatch",
                             "M_inc8" = "M_Inc8"))
+
+#subset data
+plasma.focal<-plasma %>% filter(focal=="y")
 #note focal timepoints in prolactin dataset
 plasma$focal<-ifelse(plasma$Treatment %in% c("bldg", "inc_d3", "M_inc8", "inc_d9", "hatch"), "y", "n") #if the stage is in the list of accepted values, focal is yes, otherwise, no. 
 
 #manually re-order stages
 plasma.focal$Treatment<- factor(plasma.focal$Treatment, levels=c("bldg", "inc_d3","inc_d9",  "M_inc8", "hatch")) 
-
-#subset data
-plasma.focal<-plasma %>% filter(focal=="y")
 
 #linear model for sex and stage with plasma prolactin data
 m.plasma<-glm(Prolactin.ng.mL~Treatment + Sex, plasma.focal, family="gaussian")
