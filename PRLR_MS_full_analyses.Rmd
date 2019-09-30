@@ -639,14 +639,13 @@ p.p.j<-prl.join%>% filter(focal=="y" & tissue=="pituitary" & geneid=="prl")
 
 #plot correlation
 #(scatterplot for hyp, prl, joined data) = sp.h.pr.j
-sp.p.p.j<- p.p.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, shape=stage))+
+sp.p.p.j<- p.p.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage, shape=stage))+
            geom_point(size = 3)+
           geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
               aes(group=1),colour="black") + 
           labs(x="Plasma prolactin concentration (ng/mL)", 
                y="Pituitary PRL expression (log(counts))")+
-          ggtitle("Plasma prolactin predicts pituitary PRL expression", subtitle = "Proof of principle") + 
-          annotate("text", x = 75, y = 3, label = "R2= 0.64, p<< 0.01")
+          annotate("text", x = 75, y = 3, label = "R2= 0.64, p<< 0.01", size=5)
 sp.p.p.j
 
 #correlation linear model 
@@ -666,8 +665,7 @@ sp.h.pr.j<- h.pr.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage,
           geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
               aes(group=1),colour="black") + 
           labs(x="Plasma prolactin concentration (ng/mL)", 
-               y="Hypothalamic PRLR expression (log(counts))")+
-          ggtitle("Prolactin vs Hyp PRLR") + 
+               y="Hypothalamic PRLR expression")+
           annotate("text", x = 75, y = 3, label = "R2=0.001, n.s.")
 sp.h.pr.j
 
@@ -689,8 +687,7 @@ sp.h.p.j<- h.p.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage, s
           geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
               aes(group=1),colour="black") + 
           labs(x="Plasma prolactin concentration (ng/mL)", 
-               y="Hypothalamic PRL expression (log(counts))")+
-          ggtitle("Plasma prolactin predicts hypothalamic ePRL expression") + 
+               y="Hypothalamic PRL expression")+ 
           annotate("text", x = 75, y = 3, label = "R2=0.072, p = 0.02")
 sp.h.p.j
 
@@ -711,9 +708,8 @@ sp.p.pr.j<- p.pr.j %>% ggplot(aes(y = log.exp, x = Prolactin.ng.mL, color=stage,
           geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
               aes(group=1),colour="black") + 
           labs(x="Plasma prolactin concentration (ng/mL)", 
-               y="Pit PRLR expression (log(counts))")+
-          ggtitle("Prolactin vs Pit PRLR") + 
-          annotate("text", x = 75, y = 3, label = "n.s.", size=5)
+               y="Pituitary PRLR expression")+
+          annotate("text", x = 75, y = 3, label = "R2=0.01, n.s.")
 sp.p.pr.j
 
 #correlation linear model 
@@ -728,21 +724,35 @@ prolactin<-read.csv("~/Desktop/data/2019-09-11_prolactin_plasma_sample_join.csv"
 #join qPCR data and prolactin plasma data 
 join<-left_join(crops.long,prolactin)
 
+join$Stage<- factor(join$Stage, levels=c("Bldg", "Inc_D3","Inc_D9",  "Manip_D8", "Hatch")) #manual re-order of factors
+
 #scatterplot with linear model graph
 join$Stage<-as.factor(join$Stage)
 crop_vs_prolactin<- join%>% filter(gene=="PRLR_ddCT") %>%
-  ggplot(aes(y = log.foldchange, x = prolactin_conc, color=Stage))+
-  geom_point()+
+  ggplot(aes(y = log.foldchange, x = prolactin_conc, color=Stage, shape=Stage))+
+  geom_point(size=3)+
   geom_smooth(method=lm, na.rm = TRUE, fullrange= TRUE,
                aes(group=1),colour="black") + 
-  labs(x="Plasma prolactin concentration(ng/mL)", y="Crop PRLR expression (log(fold change))")+
-  annotate("text", x = 75, y = -4, label = "p=0.006")+
-  ggtitle("Plasma prolactin significantly predicts crop PRLR expression")
+  labs(x="Plasma prolactin concentration(ng/mL)", y="Crop PRLR expression")+
+  annotate("text", x = 75, y = -4, label = "R2=0.10,p=0.006")
 crop_vs_prolactin
 
 #prolactin correlation with linear model 
 join_PRLR<-join%>% filter(gene=="PRLR_ddCT") #subset joined data
-prolactin_corr<- glm(log.foldchange~prolactin_conc, join_PRLR, family="gaussian")
+prolactin_corr<- lm(log.foldchange~prolactin_conc, join_PRLR)
 summary(prolactin_corr) 
 ```
-
+```{r prolactin figures, eval=FALSE, warning=FALSE, echo=FALSE}
+#only run once (eval set to false)
+# paper-ready figures using cowplot
+prl.legend <- get_legend(crop_vs_prolactin) #extract legend (both have same legend)
+prl.plots<-plot_grid(
+  sp.h.p.j + theme(axis.title.x = element_blank(),text=element_text(size=12),legend.position="none"), 
+  sp.h.pr.j+ theme(axis.title.x = element_blank(),text = element_text(size=12),legend.position="none"),
+  sp.p.pr.j+ theme(text = element_text(size=12),legend.position="none"),
+  crop_vs_prolactin + theme(text = element_text(size=12),legend.position = "none"),
+    labels = c("A", "B","C","D"), #adds letters
+    align = "hv") 
+prl.figs <- plot_grid(prl.plots, prl.legend, rel_widths = c(5,1))
+#I copied and downloaded prl.figs from the figure viewer in RStudio
+```
